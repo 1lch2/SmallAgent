@@ -19,8 +19,8 @@
  *    模型不打算调工具时会只输出文本——这就是循环出口。
  *
  * 4. 用回调推送事件，而不是靠返回值。
- *    一次 `send()` 会按时间顺序产生多条事件（assistant_text、tool_call、
- *    tool_result、error）。事件产生即回调，UI 可以在循环进行中增量渲染，
+ *    一次 `send()` 会按时间顺序产生思考、回复、工具调用、工具结果和错误事件。
+ *    事件产生即回调，UI 可以在循环进行中增量渲染，
  *    不必等整个回合结束。
  *
  * 5. 错误当事件处理，不抛异常。
@@ -34,6 +34,7 @@
 import type { AssistantMessage, LLM, Message } from './llm';
 import { executeTool, tools } from './tools';
 import { errorMessage } from './utils/error';
+import { splitAssistantText } from './utils/assistant-text';
 
 export interface AgentOptions {
   llm: LLM;
@@ -42,7 +43,8 @@ export interface AgentOptions {
 
 // UI 拿到的事件流。一轮 send() 会按时间顺序触发若干次回调。
 export type AgentUpdate =
-  | { kind: 'assistant_text'; text: string }
+  | { kind: 'assistant_text_thinking'; text: string }
+  | { kind: 'assistant_text_response'; text: string }
   | { kind: 'tool_call'; name: string; args: unknown; callId: string }
   | { kind: 'tool_result'; callId: string; output: string }
   | { kind: 'error'; message: string };
@@ -98,8 +100,8 @@ export class Agent {
         ...(toolCalls && toolCalls.length > 0 ? { toolCalls } : {}),
       });
 
-      if (msg.content) {
-        onUpdate({ kind: 'assistant_text', text: msg.content });
+      for (const block of splitAssistantText(msg.content)) {
+        onUpdate(block);
       }
 
       // 出口判断：模型没要工具 → 本轮结束。

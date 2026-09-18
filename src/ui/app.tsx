@@ -5,6 +5,7 @@ import Spinner from 'ink-spinner';
 import type { Agent, AgentUpdate } from '../agent';
 import { Entry, Message } from './message';
 
+/** 管理终端输入和消息列表，并展示 Agent 的输出事件。 */
 export function App({ agent }: { agent: Agent }) {
   const [input, setInput] = useState('');
   const [entries, setEntries] = useState<Entry[]>([]);
@@ -13,8 +14,9 @@ export function App({ agent }: { agent: Agent }) {
   function handleUpdate(u: AgentUpdate) {
     setEntries((prev) => {
       switch (u.kind) {
-        case 'assistant_text':
-          return [...prev, { type: 'assistant', text: u.text }];
+        case 'assistant_text_thinking':
+        case 'assistant_text_response':
+          return [...prev, { type: u.kind, text: u.text }];
         case 'tool_call':
           return [...prev, { type: 'tool_call', name: u.name, args: u.args }];
         case 'tool_result':
