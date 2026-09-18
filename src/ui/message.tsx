@@ -1,5 +1,5 @@
 import { Box, Text } from 'ink';
-import { formatArgs, truncate } from './format';
+import { formatArgs, truncate } from '../utils/format';
 
 export type Entry =
   | { type: 'user'; text: string }

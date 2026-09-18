@@ -2,8 +2,8 @@ import 'dotenv/config';
 import { render } from 'ink';
 import { Agent } from './agent';
 import { OpenAILLM } from './openai-llm';
-import { App } from './ui/app';
 import { errorMessage } from './utils/error';
+import { App } from './ui/app';
 
 try {
   const baseURL = process.env.OPENAI_BASE_URL;

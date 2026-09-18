@@ -3,7 +3,7 @@ import { Box, Text } from 'ink';
 import TextInput from 'ink-text-input';
 import Spinner from 'ink-spinner';
 import type { Agent, AgentUpdate } from '../agent';
-import { Message, type Entry } from './message';
+import { Entry, Message } from './message';
 
 export function App({ agent }: { agent: Agent }) {
   const [input, setInput] = useState('');
@@ -39,22 +39,24 @@ export function App({ agent }: { agent: Agent }) {
   }
 
   return (
-    <Box flexDirection="column" paddingX={1}>
-      <Box flexDirection="column" marginBottom={1}>
+    <Box flexDirection='column' paddingX={1}>
+      <Box flexDirection='column' marginBottom={1}>
         {entries.map((entry, i) => (
-          <Box key={i} flexDirection="column" marginBottom={1}>
+          <Box key={i} flexDirection='column' marginBottom={1}>
             <Message entry={entry} />
           </Box>
         ))}
         {busy && (
           <Box>
-            <Text color="magenta"><Spinner type="dots" /></Text>
-            <Text> thinking...</Text>
+            <Text color='magenta'>
+              <Spinner type='dots' />
+            </Text>
+            <Text> Thinking...</Text>
           </Box>
         )}
       </Box>
-      <Box borderStyle="round" borderColor="gray" paddingX={1}>
-        <Text color="green">{'> '}</Text>
+      <Box borderStyle='round' borderColor='gray' paddingX={1}>
+        <Text color='green'>{'> '}</Text>
         <TextInput value={input} onChange={setInput} onSubmit={handleSubmit} />
       </Box>
     </Box>
