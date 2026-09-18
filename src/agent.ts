@@ -9,13 +9,13 @@
  *    不用自己管理上下文窗口。
  *
  * 2. 历史不变式（最容易踩坑的地方）。
- *    OpenAI tool-calling API 要求：一旦某条 assistant 消息带有
- *    `tool_calls`，它的每一条 tool_call 都必须紧跟一条 `role: 'tool'`
- *    的消息，且 `tool_call_id` 一一对应。本轮循环严格按
+ *    一旦某条 assistant 消息带有 `toolCalls`，它的每一条调用
+ *    都必须跟随一条 `role: 'tool'` 的消息，且 `callId` 一一对应。
+ *    本轮循环严格按
  *    "assistant → tool* → assistant → ..." 的顺序追加，
  *    保证下一次请求的 messages 永远自洽。
  *
- * 3. 终止条件：模型不再返回 `tool_calls`。
+ * 3. 终止条件：模型不再返回 `toolCalls`。
  *    模型不打算调工具时会只输出文本——这就是循环出口。
  *
  * 4. 用回调推送事件，而不是靠返回值。
@@ -28,17 +28,15 @@
  *    安静返回，用户可以继续发下一条消息。
  *
  * 6. 非流式请求。
- *    每次 `create()` 一次性拿到完整响应，比流式实现简单很多。
+ *    每次 `llm.complete()` 一次性拿到完整响应，比流式实现简单很多。
  *    当前阶段优先可读性，延迟不是瓶颈。
  */
-import OpenAI from 'openai';
-import type { ChatCompletionMessageParam, ChatCompletionMessageToolCall } from 'openai/resources/chat/completions';
+import type { AssistantMessage, LLM, Message } from './llm';
 import { executeTool, tools } from './tools';
+import { errorMessage } from './utils/error';
 
 export interface AgentOptions {
-  apiKey?: string;
-  baseURL: string;
-  model: string;
+  llm: LLM;
   cwd: string;
 }
 
@@ -53,24 +51,19 @@ export type AgentUpdate =
 // 同时约束输出节奏——终端界面空间紧，长篇大论会很难读。
 // {cwd} 占位符在构造 Agent 时替换为实际工作目录。
 const SYSTEM_PROMPT =
-  'You are a terminal coding assistant. ' +
+  'You are a terminal agent.' +
   'Your working directory is {cwd}. ' +
   'You have tools to read files, write files, and run shell commands. ' +
   'Be concise. When a task is complete, give a one or two line summary. ' +
   'If you are unsure, ask the user instead of guessing.';
 
 export class Agent {
-  private client: OpenAI;
-  private model: string;
+  private llm: LLM;
   private cwd: string;
-  private history: ChatCompletionMessageParam[] = [];
+  private history: Message[] = [];
 
   constructor(opts: AgentOptions) {
-    this.client = new OpenAI({
-      apiKey: opts.apiKey,
-      baseURL: opts.baseURL,
-    });
-    this.model = opts.model;
+    this.llm = opts.llm;
     this.cwd = opts.cwd;
     this.history.push({
       role: 'system',
@@ -83,36 +76,26 @@ export class Agent {
 
     // 循环骨架：请求模型 → 若它要调工具，执行并把结果追加进历史 → 再请求。
     while (true) {
-      let response;
+      let msg: AssistantMessage;
       try {
-        response = await this.client.chat.completions.create({
-          model: this.model,
+        msg = await this.llm.complete({
           messages: this.history,
           tools,
         });
       } catch (err) {
         // API 错误转为事件，不抛——本轮中止，但 Agent 实例保持可用，
         // 用户可以继续发下一条消息。
-        const message = err instanceof Error ? err.message : String(err);
-        onUpdate({ kind: 'error', message });
+        onUpdate({ kind: 'error', message: errorMessage(err) });
         return;
       }
 
-      const choice = response.choices[0];
-      if (!choice) {
-        onUpdate({ kind: 'error', message: 'Model returned no choices.' });
-        return;
-      }
+      const toolCalls = msg.toolCalls;
 
-      const msg = choice.message;
-      const toolCalls = msg.tool_calls as ChatCompletionMessageToolCall[] | undefined;
-
-      // 先把本轮 assistant 消息写进历史：带 tool_calls 时原样保留该字段，
-      // 后面的 tool 结果要靠它对齐；content 为 null 时（纯工具调用）写成空串。
+      // 先记录模型回复与工具调用，后面的工具结果按调用 ID 对齐。
       this.history.push({
         role: 'assistant',
         content: msg.content ?? '',
-        ...(toolCalls && toolCalls.length > 0 ? { tool_calls: toolCalls } : {}),
+        ...(toolCalls && toolCalls.length > 0 ? { toolCalls } : {}),
       });
 
       if (msg.content) {
@@ -124,31 +107,28 @@ export class Agent {
         return;
       }
 
-      // 逐个执行 function 类型的 tool_call，逐条追加 'tool' 消息——
-      // 每个 tool_call_id 都有一条对应结果，历史不变式（见文件头）才不会破。
+      // 逐个执行工具调用，每个调用 ID 都有一条对应结果。
       for (const call of toolCalls) {
-        if (call.type !== 'function') continue;
-
         let parsed: Record<string, unknown> = {};
         try {
-          parsed = JSON.parse(call.function.arguments) as Record<string, unknown>;
+          parsed = JSON.parse(call.arguments) as Record<string, unknown>;
         } catch {
           parsed = {};
         }
 
         onUpdate({
           kind: 'tool_call',
-          name: call.function.name,
+          name: call.name,
           args: parsed,
           callId: call.id,
         });
 
-        const output = await executeTool(call.function.name, parsed, this.cwd);
+        const output = await executeTool(call.name, parsed, this.cwd);
 
         onUpdate({ kind: 'tool_result', callId: call.id, output });
         this.history.push({
           role: 'tool',
-          tool_call_id: call.id,
+          callId: call.id,
           content: output,
         });
       }

@@ -40,10 +40,43 @@ npm start
 
 ```
 src/
-  index.tsx   TUI (Ink)
-  agent.ts    带工具执行的聊天完成循环
-  tools.ts    工具定义 + 处理器
+  index.tsx   启动入口：读取配置、组装 Agent 和 LLM、挂载 UI
+  agent.ts    对话历史、工具执行循环和 UI 事件
+  llm.ts      模型接口与消息、工具类型（不依赖 SDK）
+  openai-llm.ts OpenAI 兼容接口的请求和协议转换
+  tools/
+    index.ts        工具执行入口：分发调用、统一处理错误
+    definitions.ts  工具名称、描述和参数定义
+    file-read.ts    读取文件
+    file-write.ts   写入文件
+    terminal-run.ts 执行命令
+  ui/
+    app.tsx         输入、忙碌状态和消息列表
+    message.tsx     单条消息展示及展示类型
+    format.ts       参数格式化、工具输出截断
+  utils/
+    path.ts         路径解析
+    error.ts        错误文本转换
 ```
+
+Agent 通过构造参数接收 `LLM`，只调用 `complete({ messages, tools })`。
+API key、端点、模型以及 OpenAI SDK 响应处理都留在 `OpenAILLM` 中。
+修改 agent 逻辑时可以注入固定回复，无需配置端点或访问网络：
+
+```ts
+import { Agent } from './src/agent';
+import type { LLM } from './src/llm';
+
+const llm: LLM = {
+  async complete({ messages }) {
+    return { role: 'assistant', content: `收到 ${messages.length} 条消息` };
+  },
+};
+const agent = new Agent({ llm, cwd: process.cwd() });
+await agent.send('hello', console.log);
+```
+
+替换模型服务时实现同一个 `LLM` 接口即可，agent 和工具代码不需要依赖新服务的 SDK。
 
 ## Scripts
 
