@@ -3,8 +3,20 @@
   "version": "0.1.0",
   "description": "Minimalist terminal agent powered by OpenAI-compatible APIs",
   "type": "module",
+  "bin": {
+    "smallagent": "dist/smallagent.js"
+  },
+  "files": [
+    "dist/**",
+    "README.md",
+    ".env.example"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "start": "tsx src/index.tsx",
+    "build": "node scripts/build.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -18,6 +30,7 @@
   "devDependencies": {
     "@types/node": "^22.20.2",
     "@types/react": "^18.3.12",
+    "esbuild": "^0.28.2",
     "tsx": "^4.19.2",
     "typescript": "^5.6.3"
   }

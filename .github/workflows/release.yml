@@ -1,0 +1,58 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - master
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v6
+
+      - name: 设置 Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: 安装依赖
+        run: npm ci
+
+      - name: 类型检查
+        run: npm run typecheck
+
+      - name: 编译
+        run: npm run build
+
+      - name: 打包
+        run: |
+          mkdir -p "$RUNNER_TEMP/release"
+          npm pack --pack-destination "$RUNNER_TEMP/release"
+
+      - name: 创建 GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          tag="v${version}"
+
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Release $tag already exists; increment package.json version to publish another release."
+            exit 0
+          fi
+
+          if git ls-remote --exit-code --tags origin "refs/tags/${tag}" >/dev/null 2>&1; then
+            echo "::error::Tag $tag exists without a GitHub Release. Resolve the existing tag before retrying."
+            exit 1
+          fi
+
+          gh release create "$tag" "$RUNNER_TEMP"/release/*.tgz \
+            --title "$tag" \
+            --target "$GITHUB_SHA" \
+            --generate-notes
