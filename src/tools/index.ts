@@ -1,64 +1,29 @@
-import { fileRead } from './file-read';
-import { fileWrite } from './file-write';
-import { terminalRun } from './terminal-run';
 import { errorMessage } from '../utils/error';
-import { ToolDefinition } from '../types';
+import type { ToolDefinition } from '../types';
+import { fileReadTool } from './file-read';
+import { fileWriteTool } from './file-write';
+import { terminalRunTool } from './terminal-run';
 
-export const tools: ToolDefinition[] = [
-  {
-    name: 'file_read',
-    description:
-      'Read a file inside the working directory. Path can be relative or absolute, but must resolve inside it.',
-    parameters: {
-      type: 'object',
-      properties: {
-        path: { type: 'string', description: 'Path to a file inside the working directory.' },
-      },
-      required: ['path'],
-      additionalProperties: false,
-    },
-  },
-  {
-    name: 'file_write',
-    description:
-      'Write inside the working directory, creating or overwriting a file. Always read the file first when modifying an existing file.',
-    parameters: {
-      type: 'object',
-      properties: {
-        path: { type: 'string', description: 'Path to a file inside the working directory.' },
-        content: { type: 'string', description: 'Full content to write to the file.' },
-      },
-      required: ['path', 'content'],
-      additionalProperties: false,
-    },
-  },
-  {
-    name: 'terminal_run',
-    description:
-      'Run a shell command from the working directory. Returns combined stdout and stderr. Use for any command-line operations.',
-    parameters: {
-      type: 'object',
-      properties: {
-        command: { type: 'string', description: 'The shell command to execute.' },
-      },
-      required: ['command'],
-      additionalProperties: false,
-    },
-  },
-];
+type ToolHandler = {
+  definition: ToolDefinition;
+  execute: (args: Record<string, unknown>, cwd: string) => Promise<string>;
+};
 
+const registeredTools: ToolHandler[] = [fileReadTool, fileWriteTool, terminalRunTool];
+const toolRegistry = new Map<string, ToolHandler>(
+  registeredTools.map((tool): [string, ToolHandler] => [tool.definition.name, tool]),
+);
+
+/** 返回传给模型的工具定义列表。 */
+export const tools: ToolDefinition[] = Array.from(toolRegistry.values(), ({ definition }) => definition);
+
+/** 按名称执行已注册工具，并把异常转换为可返回给模型的文本。 */
 export async function executeTool(name: string, args: Record<string, unknown>, cwd: string): Promise<string> {
+  const tool = toolRegistry.get(name);
+  if (!tool) return `Unknown tool: ${name}`;
+
   try {
-    switch (name) {
-      case 'file_read':
-        return await fileRead(args, cwd);
-      case 'file_write':
-        return await fileWrite(args, cwd);
-      case 'terminal_run':
-        return await terminalRun(args, cwd);
-      default:
-        return `Unknown tool: ${name}`;
-    }
+    return await tool.execute(args, cwd);
   } catch (err) {
     return `Error: ${errorMessage(err)}`;
   }
