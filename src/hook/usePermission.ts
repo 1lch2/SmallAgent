@@ -1,9 +1,10 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 
-/** 检查路径是否位于当前工作目录内。 */
-export async function usePermission(targetPath: string): Promise<boolean> {
-  if (!targetPath.trim()) return false;
+/** 检查一个或多个路径是否都位于当前工作目录内。 */
+export async function usePermission(targetPaths: string | string[]): Promise<boolean> {
+  const paths = Array.isArray(targetPaths) ? targetPaths : [targetPaths];
+  if (paths.some((targetPath) => !targetPath.trim())) return false;
 
   let root: string;
   try {
@@ -12,6 +13,15 @@ export async function usePermission(targetPath: string): Promise<boolean> {
     return false;
   }
 
+  for (const targetPath of paths) {
+    const allowed = await isPathWithinRoot(root, targetPath);
+    if (!allowed) return false;
+  }
+
+  return true;
+}
+
+async function isPathWithinRoot(root: string, targetPath: string): Promise<boolean> {
   const target = path.resolve(targetPath);
   try {
     return isWithinRoot(root, await fs.realpath(target));
