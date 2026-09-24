@@ -7,11 +7,12 @@ import { ToolDefinition } from '../llm';
 export const tools: ToolDefinition[] = [
   {
     name: 'file_read',
-    description: 'Read the contents of a file. Path is relative to the working directory or absolute.',
+    description:
+      'Read a file inside the working directory. Path can be relative or absolute, but must resolve inside it.',
     parameters: {
       type: 'object',
       properties: {
-        path: { type: 'string', description: 'Path to the file to read.' },
+        path: { type: 'string', description: 'Path to a file inside the working directory.' },
       },
       required: ['path'],
       additionalProperties: false,
@@ -20,11 +21,11 @@ export const tools: ToolDefinition[] = [
   {
     name: 'file_write',
     description:
-      'Write content to a file, creating or overwriting it. Always read the file first when modifying an existing file.',
+      'Write inside the working directory, creating or overwriting a file. Always read the file first when modifying an existing file.',
     parameters: {
       type: 'object',
       properties: {
-        path: { type: 'string', description: 'Path to the file to write.' },
+        path: { type: 'string', description: 'Path to a file inside the working directory.' },
         content: { type: 'string', description: 'Full content to write to the file.' },
       },
       required: ['path', 'content'],

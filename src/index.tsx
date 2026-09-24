@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import { render } from 'ink';
-import { Agent } from './agent';
+import { Agent } from './core/agent';
 import { OpenAILLM } from './openai-llm';
 import { errorMessage } from './utils/error';
 import { App } from './ui/app';

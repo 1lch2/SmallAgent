@@ -1,4 +1,8 @@
-1. No unit tests.
-2. All exported functions and interfaces must have JSDoc comment explaining what it does. A simple line of explanation is enough.
-3. Write comments in Chinese.
-4. UI components must use PascalCase naming (e.g.: `UserProfile`、`NavBar`)
+- No unit tests.
+- All exported functions and interfaces must have JSDoc comment explaining what it does. A simple line of explanation is enough.
+- Write comments in Chinese.
+- UI components must use PascalCase naming (e.g.: `UserProfile`、`NavBar`)
+- React 风格开发。
+  - 自定义 Hook 使用 `use` 前缀和 camelCase 命名（例如：`usePermission`）。
+  - Hook 必须在调用函数的顶层无条件调用，并保持每次调用顺序一致；禁止在条件、循环、条件表达式、try/catch/finally 或嵌套函数中调用。
+  - 需要根据 Hook 结果分支时，先在顶层调用并保存结果，再根据结果执行条件逻辑。

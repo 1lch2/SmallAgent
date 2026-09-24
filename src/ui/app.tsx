@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Box, Text } from 'ink';
 import TextInput from 'ink-text-input';
 import Spinner from 'ink-spinner';
-import type { Agent, AgentUpdate } from '../agent';
+import { Agent, AgentUpdate } from '../core/agent';
 import { Entry, Message } from './message';
 
 /** 管理终端输入和消息列表，并展示 Agent 的输出事件。 */

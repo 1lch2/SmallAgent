@@ -31,17 +31,19 @@
  *    每次 `llm.complete()` 一次性拿到完整响应，比流式实现简单很多。
  *    当前阶段优先可读性，延迟不是瓶颈。
  */
-import type { AssistantMessage, LLM, Message } from './llm';
-import { executeTool, tools } from './tools';
-import { errorMessage } from './utils/error';
-import { splitAssistantText } from './utils/assistant-text';
+import type { AssistantMessage, LLM, Message } from '../llm';
+import { executeTool, tools } from '../tools';
+import { errorMessage } from '../utils/error';
+import { splitAssistantText } from '../utils/assistant-text';
+import { buildSystemPrompt } from './system-prompt';
 
+/** 初始化 Agent 所需的模型与工作目录。 */
 export interface AgentOptions {
   llm: LLM;
   cwd: string;
 }
 
-// UI 拿到的事件流。一轮 send() 会按时间顺序触发若干次回调。
+/** 描述 Agent 按处理顺序推送给界面的更新事件。 */
 export type AgentUpdate =
   | { kind: 'assistant_text_thinking'; text: string }
   | { kind: 'assistant_text_response'; text: string }
@@ -49,30 +51,23 @@ export type AgentUpdate =
   | { kind: 'tool_result'; callId: string; output: string }
   | { kind: 'error'; message: string };
 
-// 系统提示词常量：直接告诉模型 cwd，让它发出的相对路径无歧义；
-// 同时约束输出节奏——终端界面空间紧，长篇大论会很难读。
-// {cwd} 占位符在构造 Agent 时替换为实际工作目录。
-const SYSTEM_PROMPT =
-  'You are a terminal agent.' +
-  'Your working directory is {cwd}. ' +
-  'You have tools to read files, write files, and run shell commands. ' +
-  'Be concise. When a task is complete, give a one or two line summary. ' +
-  'If you are unsure, ask the user instead of guessing.';
-
+/** 持有对话历史，并驱动模型与工具之间的 ReAct 循环。 */
 export class Agent {
   private llm: LLM;
   private cwd: string;
   private history: Message[] = [];
 
+  /** 创建 Agent，并初始化包含工作目录的系统提示词。 */
   constructor(opts: AgentOptions) {
     this.llm = opts.llm;
     this.cwd = opts.cwd;
     this.history.push({
       role: 'system',
-      content: SYSTEM_PROMPT.replace('{cwd}', this.cwd),
+      content: buildSystemPrompt(this.cwd),
     });
   }
 
+  /** 发送用户输入，并按处理过程推送 Agent 更新事件。 */
   async send(userInput: string, onUpdate: (u: AgentUpdate) => void): Promise<void> {
     this.history.push({ role: 'user', content: userInput });
 
