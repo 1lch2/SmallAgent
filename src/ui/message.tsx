@@ -23,7 +23,7 @@ export function Message({ entry }: { entry: Entry }) {
     case 'assistant_text_thinking':
       return (
         <Text>
-          <Text color='gray'>{'Thinking...\n'}</Text>
+          <Text color='gray'>{'Thinking\n'}</Text>
           <Text dimColor>{entry.text}</Text>
         </Text>
       );
