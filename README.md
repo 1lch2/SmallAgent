@@ -36,31 +36,9 @@ npm start
 
 代理的运行循环如下：发送 → 如果模型返回工具调用，执行它们并将结果反馈回来 → 重复直到模型返回纯文本。
 
-## 布局
+## UI
 
-```
-src/
-  index.tsx   启动入口：读取配置、组装 Agent 和 LLM、挂载 UI
-  agent.ts    对话历史、工具执行循环和 UI 事件
-  llm.ts      模型接口与消息、工具类型（不依赖 SDK）
-  openai-llm.ts OpenAI 兼容接口的请求和协议转换
-  tools/
-    index.ts        工具执行入口：分发调用、统一处理错误
-    definitions.ts  工具名称、描述和参数定义
-    file-read.ts    读取文件
-    file-write.ts   写入文件
-    terminal-run.ts 执行命令
-  ui/
-    app.tsx         输入、忙碌状态和消息列表
-    message.tsx     单条消息展示及展示类型
-    format.ts       参数格式化、工具输出截断
-  utils/
-    path.ts         路径解析
-    error.ts        错误文本转换
-```
-
-Agent 通过构造参数接收 `LLM`，只调用 `complete({ messages, tools })`。
-API key、端点、模型以及 OpenAI SDK 响应处理都留在 `OpenAILLM` 中。
+使用 Ink 开发 TUI，规范同 React，本项目约定也基本遵循一般的 React app 模式。
 
 ## Scripts
 
