@@ -1,8 +1,8 @@
 # SmallAgent
 
-纯自娱自乐的极简的终端代理工具。只有最基础能力：读写文件，运行命令。
+纯自娱自乐的极简 CLI Agent。只有最基础能力：读写文件，运行命令。
 
-目前没有 Skill 或 MCP 接入。文件工具只允许访问工作目录内、且当前进程具有相应读写权限的路径；`terminal_run` 可以执行任意 shell 命令，仍可能访问或删除其他文件，请谨慎使用。
+目前通过权限hook限制工具调用范围为当前工作目录，但依然可能乱写你的文件，不要让任何模型或者 harness 调用这里的工具搞一些你不知道的事。
 
 ## 快速开始
 
@@ -61,22 +61,6 @@ src/
 
 Agent 通过构造参数接收 `LLM`，只调用 `complete({ messages, tools })`。
 API key、端点、模型以及 OpenAI SDK 响应处理都留在 `OpenAILLM` 中。
-修改 agent 逻辑时可以注入固定回复，无需配置端点或访问网络：
-
-```ts
-import { Agent } from './src/agent';
-import type { LLM } from './src/llm';
-
-const llm: LLM = {
-  async complete({ messages }) {
-    return { role: 'assistant', content: `收到 ${messages.length} 条消息` };
-  },
-};
-const agent = new Agent({ llm, cwd: process.cwd() });
-await agent.send('hello', console.log);
-```
-
-替换模型服务时实现同一个 `LLM` 接口即可，agent 和工具代码不需要依赖新服务的 SDK。
 
 ## Scripts
 
