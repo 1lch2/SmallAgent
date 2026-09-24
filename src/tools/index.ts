@@ -2,7 +2,7 @@ import { fileRead } from './file-read';
 import { fileWrite } from './file-write';
 import { terminalRun } from './terminal-run';
 import { errorMessage } from '../utils/error';
-import { ToolDefinition } from '../llm';
+import { ToolDefinition } from '../types';
 
 export const tools: ToolDefinition[] = [
   {

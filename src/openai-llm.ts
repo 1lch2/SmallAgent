@@ -1,6 +1,6 @@
 import OpenAI from 'openai';
 import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
-import type { AssistantMessage, CompletionRequest, LLM, Message } from './llm';
+import type { AssistantMessage, CompletionRequest, LLM, Message } from './types';
 
 export interface OpenAILLMOptions {
   apiKey?: string;
@@ -16,13 +16,15 @@ function toOpenAIMessage(message: Message): ChatCompletionMessageParam {
     return {
       role: 'assistant',
       content: message.content,
-      ...(message.toolCalls?.length ? {
-        tool_calls: message.toolCalls.map((call) => ({
-          id: call.id,
-          type: 'function' as const,
-          function: { name: call.name, arguments: call.arguments },
-        })),
-      } : {}),
+      ...(message.toolCalls?.length
+        ? {
+            tool_calls: message.toolCalls.map((call) => ({
+              id: call.id,
+              type: 'function' as const,
+              function: { name: call.name, arguments: call.arguments },
+            })),
+          }
+        : {}),
     };
   }
   return { role: message.role, content: message.content };
@@ -51,13 +53,15 @@ export class OpenAILLM implements LLM {
     return {
       role: 'assistant',
       content: message.content ?? '',
-      ...(message.tool_calls?.length ? {
-        toolCalls: message.tool_calls.map((call) => ({
-          id: call.id,
-          name: call.function.name,
-          arguments: call.function.arguments,
-        })),
-      } : {}),
+      ...(message.tool_calls?.length
+        ? {
+            toolCalls: message.tool_calls.map((call) => ({
+              id: call.id,
+              name: call.function.name,
+              arguments: call.function.arguments,
+            })),
+          }
+        : {}),
     };
   }
 }

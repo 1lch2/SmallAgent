@@ -31,7 +31,7 @@
  *    每次 `llm.complete()` 一次性拿到完整响应，比流式实现简单很多。
  *    当前阶段优先可读性，延迟不是瓶颈。
  */
-import type { AssistantMessage, LLM, Message } from '../llm';
+import type { AssistantMessage, LLM, Message } from '../types';
 import { executeTool, tools } from '../tools';
 import { errorMessage } from '../utils/error';
 import { splitAssistantText } from '../utils/assistant-text';
