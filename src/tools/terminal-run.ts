@@ -4,15 +4,15 @@ import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { usePermission } from '../hook/usePermission';
 import type { ToolDefinition } from '../types';
-import { getCurrentShellPath } from '../utils/shell';
+import { getCurrentShellInfo, type ShellType } from '../utils/shell';
 
 const execAsync = promisify(exec);
 
 /** 检查命令中的显式路径权限后，在指定工作目录中执行命令。 */
 export async function terminalRun(args: Record<string, unknown>, cwd: string): Promise<string> {
   const command = String(args.command);
-  const shellPath = getCurrentShellPath();
-  const pathAnalysis = extractCommandPaths(command, cwd, shellPath);
+  const shell = getCurrentShellInfo();
+  const pathAnalysis = extractCommandPaths(command, cwd, shell.type);
   const hasPermission = await usePermission(pathAnalysis.paths);
 
   if (!pathAnalysis.isValid || !hasPermission) {
@@ -22,7 +22,7 @@ export async function terminalRun(args: Record<string, unknown>, cwd: string): P
   const { stdout, stderr } = await execAsync(command, {
     cwd,
     maxBuffer: 10 * 1024 * 1024,
-    shell: shellPath,
+    shell: shell.path,
   });
   const out = (stdout ?? '').trim();
   const err = (stderr ?? '').trim();
@@ -34,9 +34,9 @@ export async function terminalRun(args: Record<string, unknown>, cwd: string): P
 function extractCommandPaths(
   command: string,
   cwd: string,
-  shellPath: string,
+  shellType: ShellType,
 ): { paths: string[]; isValid: boolean } {
-  const tokens = tokenizeCommand(command, shellPath);
+  const tokens = tokenizeCommand(command, shellType);
   if (!tokens) return { paths: [], isValid: false };
 
   const paths = new Set<string>();
@@ -53,11 +53,10 @@ function extractCommandPaths(
   return { paths: [...paths], isValid: true };
 }
 
-function tokenizeCommand(command: string, shellPath: string): string[] | null {
+function tokenizeCommand(command: string, shellType: ShellType): string[] | null {
   const tokens: string[] = [];
   const isWindows = process.platform === 'win32';
-  const isPowerShell =
-    isWindows && /^(pwsh|powershell)(\.exe)?$/i.test(path.basename(shellPath));
+  const isPowerShell = shellType === 'powershell';
   let value = '';
   let quote: '"' | "'" | null = null;
   let hasValue = false;
@@ -106,7 +105,7 @@ function tokenizeCommand(command: string, shellPath: string): string[] | null {
       hasValue = true;
       continue;
     }
-    if (isWindows && !isPowerShell && character === '^' && index + 1 < command.length) {
+    if (isWindows && shellType === 'cmd' && character === '^' && index + 1 < command.length) {
       value += command[++index];
       hasValue = true;
       continue;
