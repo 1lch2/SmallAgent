@@ -1,6 +1,7 @@
 import { Box, Text } from 'ink';
 import { formatArgs, truncate } from '../utils/format';
 
+/** 描述终端消息列表支持展示的条目类型。 */
 export type Entry =
   | { type: 'user'; text: string }
   | { type: 'assistant_text_thinking'; text: string }

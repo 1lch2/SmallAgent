@@ -2,6 +2,7 @@ import OpenAI from 'openai';
 import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 import type { AssistantMessage, CompletionRequest, LLM, Message } from './types';
 
+/** 描述 OpenAI 兼容端点的密钥、地址和模型配置。 */
 export interface OpenAILLMOptions {
   apiKey?: string;
   baseURL: string;
@@ -35,11 +36,13 @@ export class OpenAILLM implements LLM {
   private client: OpenAI;
   private model: string;
 
+  /** 根据连接配置创建 OpenAI 兼容模型适配器。 */
   constructor(opts: OpenAILLMOptions) {
     this.client = new OpenAI({ apiKey: opts.apiKey, baseURL: opts.baseURL });
     this.model = opts.model;
   }
 
+  /** 请求模型并将响应转换为 Agent 使用的消息格式。 */
   async complete(request: CompletionRequest): Promise<AssistantMessage> {
     const response = await this.client.chat.completions.create({
       model: this.model,
