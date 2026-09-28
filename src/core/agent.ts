@@ -49,6 +49,7 @@ export type AgentUpdate =
   | { kind: 'assistant_text_response'; text: string }
   | { kind: 'tool_call'; name: string; args: unknown; callId: string }
   | { kind: 'tool_result'; callId: string; output: string }
+  | { kind: 'token_usage'; usedTokens: number }
   | { kind: 'error'; message: string };
 
 /** 持有对话历史，并驱动模型与工具之间的 ReAct 循环。 */
@@ -78,6 +79,7 @@ export class Agent {
         msg = await this.llm.complete({
           messages: this.history,
           tools,
+          onTokenUsage: (usedTokens) => onUpdate({ kind: 'token_usage', usedTokens }),
         });
       } catch (err) {
         // API 错误转为事件，不抛——本轮中止，但 Agent 实例保持可用，

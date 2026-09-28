@@ -30,6 +30,8 @@ export type Message =
 export interface CompletionRequest {
   messages: Message[];
   tools: ToolDefinition[];
+  /** 接收当前模型 session 累计消耗的 token 数量。 */
+  onTokenUsage?: (usedTokens: number) => void;
 }
 
 /** 定义与具体 SDK 无关的模型补全能力。 */

@@ -6,12 +6,18 @@ import { Agent, AgentUpdate } from '../core/agent';
 import { Entry, Message } from './message';
 
 /** 管理终端输入和消息列表，并展示 Agent 的输出事件。 */
-export function App({ agent }: { agent: Agent }) {
+export function App({ agent, model }: { agent: Agent; model: string }) {
   const [input, setInput] = useState('');
   const [entries, setEntries] = useState<Entry[]>([]);
   const [busy, setBusy] = useState(false);
+  const [usedTokens, setUsedTokens] = useState(0);
 
   function handleUpdate(u: AgentUpdate) {
+    if (u.kind === 'token_usage') {
+      setUsedTokens(u.usedTokens);
+      return;
+    }
+
     setEntries((prev) => {
       switch (u.kind) {
         case 'assistant_text_thinking':
@@ -41,7 +47,7 @@ export function App({ agent }: { agent: Agent }) {
   }
 
   return (
-    <Box flexDirection='column' paddingX={1}>
+    <Box flexDirection='column' paddingX={2}>
       <Box flexDirection='column' marginBottom={1}>
         {entries.map((entry, i) => (
           <Box key={i} flexDirection='column' marginBottom={1}>
@@ -60,6 +66,10 @@ export function App({ agent }: { agent: Agent }) {
       <Box borderStyle='round' borderColor='gray' paddingX={1}>
         <Text color='green'>{'> '}</Text>
         <TextInput value={input} onChange={setInput} onSubmit={handleSubmit} />
+      </Box>
+      <Box width='100%' justifyContent='space-between'>
+        <Text color='gray'>{model}</Text>
+        <Text color='gray'>{`${(usedTokens / 1000).toFixed(1)}k tokens`}</Text>
       </Box>
     </Box>
   );
