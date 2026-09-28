@@ -6,12 +6,19 @@ import { Agent, AgentUpdate } from '../core/agent';
 import { Entry, Message } from './message';
 
 /** 管理终端输入和消息列表，并展示 Agent 的输出事件。 */
-export function App({ agent }: { agent: Agent }) {
+export function App({ agent, model }: { agent: Agent; model: string }) {
   const [input, setInput] = useState('');
   const [entries, setEntries] = useState<Entry[]>([]);
   const [busy, setBusy] = useState(false);
+  const [usedTokens, setUsedTokens] = useState(0);
 
   function handleUpdate(u: AgentUpdate) {
+    if (u.kind === 'token_usage') {
+      setUsedTokens(u.usedTokens);
+      return;
+    }
+    if (u.kind === 'tool_result' && (u.name === 'file_read' || u.name === 'file_write')) return;
+
     setEntries((prev) => {
       switch (u.kind) {
         case 'assistant_text_thinking':
@@ -20,7 +27,7 @@ export function App({ agent }: { agent: Agent }) {
         case 'tool_call':
           return [...prev, { type: 'tool_call', name: u.name, args: u.args }];
         case 'tool_result':
-          return [...prev, { type: 'tool_result', text: u.output }];
+          return [...prev, { type: 'tool_result', name: u.name, args: u.args, text: u.output }];
         case 'error':
           return [...prev, { type: 'error', text: u.message }];
       }
@@ -59,7 +66,11 @@ export function App({ agent }: { agent: Agent }) {
       </Box>
       <Box borderStyle='round' borderColor='gray' paddingX={1}>
         <Text color='green'>{'> '}</Text>
-        <TextInput value={input} onChange={setInput} onSubmit={handleSubmit} />
+        <TextInput value={input} onChange={setInput} onSubmit={handleSubmit} showCursor />
+      </Box>
+      <Box width='100%' justifyContent='space-between'>
+        <Text color='gray'>{model}</Text>
+        <Text color='gray'>{`${(usedTokens / 1000).toFixed(1)}k tokens`}</Text>
       </Box>
     </Box>
   );

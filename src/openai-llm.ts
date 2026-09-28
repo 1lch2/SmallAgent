@@ -35,6 +35,7 @@ function toOpenAIMessage(message: Message): ChatCompletionMessageParam {
 export class OpenAILLM implements LLM {
   private client: OpenAI;
   private model: string;
+  private usedTokens = 0;
 
   /** 根据连接配置创建 OpenAI 兼容模型适配器。 */
   constructor(opts: OpenAILLMOptions) {
@@ -49,6 +50,10 @@ export class OpenAILLM implements LLM {
       messages: request.messages.map(toOpenAIMessage),
       tools: request.tools.map((tool) => ({ type: 'function', function: tool })),
     });
+    if (response.usage) {
+      this.usedTokens += response.usage.total_tokens;
+      request.onTokenUsage?.(this.usedTokens);
+    }
     const choice = response.choices[0];
     if (!choice) throw new Error('Model returned no choices.');
 

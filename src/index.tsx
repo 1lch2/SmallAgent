@@ -15,15 +15,16 @@ try {
     throw new Error('SMALLAGENT_MODEL is required. Set it in .env or as an environment variable.');
   }
 
+  const llm = new OpenAILLM({
+    apiKey: process.env.OPENAI_API_KEY,
+    baseURL,
+    model,
+  });
   const agent = new Agent({
-    llm: new OpenAILLM({
-      apiKey: process.env.OPENAI_API_KEY,
-      baseURL,
-      model,
-    }),
+    llm,
     cwd: process.cwd(),
   });
-  render(<App agent={agent} />);
+  render(<App agent={agent} model={model} />);
 } catch (err) {
   console.error(errorMessage(err));
   process.exit(1);
