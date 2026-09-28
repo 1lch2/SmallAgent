@@ -17,6 +17,7 @@ export function App({ agent, model }: { agent: Agent; model: string }) {
       setUsedTokens(u.usedTokens);
       return;
     }
+    if (u.kind === 'tool_result' && (u.name === 'file_read' || u.name === 'file_write')) return;
 
     setEntries((prev) => {
       switch (u.kind) {
@@ -26,7 +27,7 @@ export function App({ agent, model }: { agent: Agent; model: string }) {
         case 'tool_call':
           return [...prev, { type: 'tool_call', name: u.name, args: u.args }];
         case 'tool_result':
-          return [...prev, { type: 'tool_result', text: u.output }];
+          return [...prev, { type: 'tool_result', name: u.name, args: u.args, text: u.output }];
         case 'error':
           return [...prev, { type: 'error', text: u.message }];
       }
@@ -47,7 +48,7 @@ export function App({ agent, model }: { agent: Agent; model: string }) {
   }
 
   return (
-    <Box flexDirection='column' paddingX={2}>
+    <Box flexDirection='column' paddingX={1}>
       <Box flexDirection='column' marginBottom={1}>
         {entries.map((entry, i) => (
           <Box key={i} flexDirection='column' marginBottom={1}>
@@ -65,7 +66,7 @@ export function App({ agent, model }: { agent: Agent; model: string }) {
       </Box>
       <Box borderStyle='round' borderColor='gray' paddingX={1}>
         <Text color='green'>{'> '}</Text>
-        <TextInput value={input} onChange={setInput} onSubmit={handleSubmit} />
+        <TextInput value={input} onChange={setInput} onSubmit={handleSubmit} showCursor />
       </Box>
       <Box width='100%' justifyContent='space-between'>
         <Text color='gray'>{model}</Text>

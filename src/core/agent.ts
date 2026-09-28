@@ -48,7 +48,7 @@ export type AgentUpdate =
   | { kind: 'assistant_text_thinking'; text: string }
   | { kind: 'assistant_text_response'; text: string }
   | { kind: 'tool_call'; name: string; args: unknown; callId: string }
-  | { kind: 'tool_result'; callId: string; output: string }
+  | { kind: 'tool_result'; callId: string; name: string; args: Record<string, unknown>; output: string }
   | { kind: 'token_usage'; usedTokens: number }
   | { kind: 'error'; message: string };
 
@@ -124,7 +124,7 @@ export class Agent {
 
         const output = await executeTool(call.name, parsed, this.cwd);
 
-        onUpdate({ kind: 'tool_result', callId: call.id, output });
+        onUpdate({ kind: 'tool_result', callId: call.id, name: call.name, args: parsed, output });
         this.history.push({
           role: 'tool',
           callId: call.id,
