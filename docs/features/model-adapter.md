@@ -14,7 +14,7 @@
 
 [Agent 循环](agent-loop.md) → `OpenAILLM.complete` → 非流式 Chat Completions 请求 → 内部助手消息。工具参数保留为原始 JSON 字符串，由 Agent 解析；工具消息通过 `tool_call_id` 对齐。
 
-`usedTokens` 属于适配器实例，累加响应提供的 `usage.total_tokens`，经 `onTokenUsage` 和 `AgentUpdate` 传到[终端状态栏](terminal-ui.md)。响应未提供 usage 时不更新；没有 choice 时抛出错误，由 Agent 请求错误分支处理。
+`tokenUsage` 属于适配器实例，按 OpenAI SDK 的标准字段累加 `usage.total_tokens`、`usage.prompt_tokens` 和 `usage.prompt_tokens_details.cached_tokens`，分别映射到内部 `TokenUsage` 的 `totalTokens`、`promptTokens` 和 `cachedTokens`。经 `onTokenUsage` 和 `AgentUpdate.usage` 传到[终端工具栏](terminal-ui.md)。缓存字段缺失时本次缓存量按 0 计算，响应未提供 usage 时不更新；缓存量已包含在输入和总用量中，不重复相加。没有 choice 时抛出错误，由 Agent 请求错误分支处理。
 
 ## 验证入口与待补充范围
 

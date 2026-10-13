@@ -5,6 +5,8 @@ import { Agent, AgentUpdate } from '../core/agent';
 import { Entry, Message } from './Message';
 import { version } from '../../package.json';
 import { CommandInput } from './CommandInput';
+import { Toolbar } from './Toolbar';
+import type { TokenUsage } from '../types';
 
 /** 管理终端输入和消息列表，并展示 Agent 的输出事件。 */
 export function App({ agent, model }: { agent: Agent; model: string }) {
@@ -13,7 +15,7 @@ export function App({ agent, model }: { agent: Agent; model: string }) {
   const [input, setInput] = useState('');
   const [entries, setEntries] = useState<Entry[]>([]);
   const [busy, setBusy] = useState(false);
-  const [usedTokens, setUsedTokens] = useState(0);
+  const [tokenUsage, setTokenUsage] = useState<TokenUsage>({ totalTokens: 0, promptTokens: 0, cachedTokens: 0 });
 
   useEffect(() => {
     const handleResize = () => setTerminalRows(stdout.rows ?? 0);
@@ -25,7 +27,7 @@ export function App({ agent, model }: { agent: Agent; model: string }) {
 
   function handleUpdate(u: AgentUpdate) {
     if (u.kind === 'token_usage') {
-      setUsedTokens(u.usedTokens);
+      setTokenUsage(u.usage);
       return;
     }
     if (u.kind === 'tool_result' && (u.name === 'file_read' || u.name === 'file_write')) return;
@@ -87,10 +89,7 @@ export function App({ agent, model }: { agent: Agent; model: string }) {
       </Box>
       <Box flexDirection='column' flexShrink={0}>
         <CommandInput value={input} onChange={setInput} onSubmit={handleSubmit} />
-        <Box width='100%' justifyContent='space-between'>
-          <Text color='gray'>{model}</Text>
-          <Text color='gray'>{`${(usedTokens / 1000).toFixed(1)}k tokens`}</Text>
-        </Box>
+        <Toolbar model={model} usage={tokenUsage} />
       </Box>
     </Box>
   );

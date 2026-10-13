@@ -26,12 +26,19 @@ export type Message =
   | AssistantMessage
   | { role: 'tool'; callId: string; content: string };
 
+/** 当前模型会话累计的用量；缓存命中量是输入用量的一部分。 */
+export interface TokenUsage {
+  totalTokens: number;
+  promptTokens: number;
+  cachedTokens: number;
+}
+
 /** 描述一次模型补全请求所需的消息和工具定义。 */
 export interface CompletionRequest {
   messages: Message[];
   tools: ToolDefinition[];
-  /** 接收当前模型 session 累计消耗的 token 数量。 */
-  onTokenUsage?: (usedTokens: number) => void;
+  /** 接收当前模型会话累计的总用量、输入用量和缓存命中量。 */
+  onTokenUsage?: (usage: TokenUsage) => void;
 }
 
 /** 定义与具体 SDK 无关的模型补全能力。 */

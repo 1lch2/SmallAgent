@@ -6,13 +6,14 @@
 
 ## 入口与关键实现
 
-- [src/ui/app.tsx](../../src/ui/app.tsx)：`App` 管理输入、展示条目、忙碌状态、Token 用量和终端行数；提交时调用 Agent，订阅并清理 stdout 的 `resize` 监听。
+- [src/ui/App.tsx](../../src/ui/App.tsx)：`App` 管理输入、展示条目、忙碌状态、Token 用量和终端行数；提交时调用 Agent，订阅并清理 stdout 的 `resize` 监听。
+- [src/ui/Toolbar.tsx](../../src/ui/Toolbar.tsx)：`Toolbar` 通过 `ToolbarProps` 接收模型名称和累计 `TokenUsage`，展示总用量、缓存命中 token 数及命中率；总量和缓存量共用格式，一万以下显示带千位分隔符的整数，从一万起使用“万”、一亿起使用“亿”，保留一位小数；不依赖 App 或 Agent，窄终端可换行。
 - [src/ui/CommandInput.tsx](../../src/ui/CommandInput.tsx)：`CommandInput` 使用共享命令注册表，管理输入框下方的斜杠菜单、前缀筛选、循环上下键导航、Tab／回车补全，并在补全后将光标移至末尾。
 - [src/commands/types.ts](../../src/commands/types.ts)：`SlashCommand` 定义命令名称、说明与可选的无参 `execute`；命令自行接入执行所需的能力。
-- [src/commands/useCommands.ts](../../src/commands/useCommands.ts)：`useCommands` 在顶层调用 `useQuitCommand`，汇总注册命令并返回菜单所用的 `commands` 和统一分发函数 `executeCommand`；按名称匹配后调用命令自身的 `execute`，不包含具体命令的执行操作，`App` 不参与命令处理。
+- [src/hook/useCommands.ts](../../src/hook/useCommands.ts)：`useCommands` 在顶层调用 `useQuitCommand`，汇总注册命令并返回菜单所用的 `commands` 和统一分发函数 `executeCommand`；按名称匹配后调用命令自身的 `execute`，不包含具体命令的执行操作，`App` 不参与命令处理。
 - [src/commands/compact.ts](../../src/commands/compact.ts)、[src/commands/model.ts](../../src/commands/model.ts)：分别注册 `/compact`（压缩上下文）、`/model`（切换模型），暂无执行逻辑。
 - [src/commands/quit.ts](../../src/commands/quit.ts)：`useQuitCommand` 在命令文件内接入 Ink `useApp`，返回 `/quit`（退出tui）声明与 `execute` 实现，由其调用 `exit` 退出并卸载 TUI。
-- [src/ui/message.tsx](../../src/ui/message.tsx)：`Entry` 定义展示类型，`Message` 渲染用户、思考、回复、工具摘要和错误。
+- [src/ui/Message.tsx](../../src/ui/Message.tsx)：`Entry` 定义展示类型，`Message` 渲染用户、思考、回复、工具摘要和错误。
 - [src/utils/assistant-text.ts](../../src/utils/assistant-text.ts)：`splitAssistantText` 按完整 `<think>...</think>` 标签拆分正文与思考块，清除边界空行并忽略空白块；由 Agent 调用后推送 UI 事件。
 - [src/utils/format.ts](../../src/utils/format.ts)：`truncate` 截断长工具输出，`formatArgs` 格式化通用工具参数。
 
@@ -26,7 +27,7 @@
 
 文件工具调用只展示文件名，`App` 不追加其结果事件，包含错误文本的文件工具结果也走这一过滤分支。命令调用展示命令文本，命令结果经截断显示。模型用量的计算归属见[模型适配](model-adapter.md)。
 
-布局包含标题与工作目录、消息区、输入框，以及模型名和累计 Token 状态栏。最小高度随终端行数变化，长消息自然延伸；启动清屏入口见[启动与构建](cli-startup.md)。
+布局包含标题与工作目录、消息区、输入框，以及独立 `Toolbar` 展示的模型名、累计总 Token、缓存命中量和命中率。命中率为累计缓存命中量除以累计输入用量，输入用量为 0 时显示 0.0%；不平均各请求的百分比。最小高度随终端行数变化，长消息自然延伸；启动清屏入口见[启动与构建](cli-startup.md)。
 
 ## 验证入口与待补充范围
 

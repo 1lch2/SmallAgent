@@ -19,14 +19,14 @@ features:
     entrypoints: [src/core/agent.ts, src/core/system-prompt.ts]
   - id: model-adapter
     name: OpenAI 兼容模型接口与 Token 用量
-    keywords: [OpenAILLM, LLM, Chat Completions, 模型, 非流式, token, usedTokens, 协议转换]
+    keywords: [OpenAILLM, LLM, Chat Completions, 模型, 非流式, token, TokenUsage, cached_tokens, 缓存命中, 协议转换]
     doc: docs/features/model-adapter.md
     entrypoints: [src/openai-llm.ts, src/types.ts]
   - id: terminal-ui
     name: 终端输入、消息展示与布局
-    keywords: [Ink, React, TUI, App, Message, 输入, Thinking, think, 工具摘要, resize, 状态栏, 斜杠命令, slash, compact, model, quit, CommandInput]
+    keywords: [Ink, React, TUI, App, Message, 输入, Thinking, think, 工具摘要, resize, 状态栏, 工具栏, Toolbar, 缓存命中率, 斜杠命令, slash, compact, model, quit, CommandInput]
     doc: docs/features/terminal-ui.md
-    entrypoints: [src/ui/app.tsx, src/ui/message.tsx, src/commands/useCommands.ts]
+    entrypoints: [src/ui/App.tsx, src/ui/Toolbar.tsx, src/hook/useCommands.ts]
   - id: file-tools
     name: 文件读写与工作目录路径权限
     keywords: [file_read, file_write, fileRead, fileWrite, usePermission, 文件, 权限, realpath, 工作目录]

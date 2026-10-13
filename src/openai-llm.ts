@@ -1,6 +1,6 @@
 import OpenAI from 'openai';
 import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
-import type { AssistantMessage, CompletionRequest, LLM, Message } from './types';
+import type { AssistantMessage, CompletionRequest, LLM, Message, TokenUsage } from './types';
 
 /** 描述 OpenAI 兼容端点的密钥、地址和模型配置。 */
 export interface OpenAILLMOptions {
@@ -35,7 +35,7 @@ function toOpenAIMessage(message: Message): ChatCompletionMessageParam {
 export class OpenAILLM implements LLM {
   private client: OpenAI;
   private model: string;
-  private usedTokens = 0;
+  private tokenUsage: TokenUsage = { totalTokens: 0, promptTokens: 0, cachedTokens: 0 };
 
   /** 根据连接配置创建 OpenAI 兼容模型适配器。 */
   constructor(opts: OpenAILLMOptions) {
@@ -51,8 +51,12 @@ export class OpenAILLM implements LLM {
       tools: request.tools.map((tool) => ({ type: 'function', function: tool })),
     });
     if (response.usage) {
-      this.usedTokens += response.usage.total_tokens;
-      request.onTokenUsage?.(this.usedTokens);
+      this.tokenUsage = {
+        totalTokens: this.tokenUsage.totalTokens + response.usage.total_tokens,
+        promptTokens: this.tokenUsage.promptTokens + response.usage.prompt_tokens,
+        cachedTokens: this.tokenUsage.cachedTokens + (response.usage.prompt_tokens_details?.cached_tokens ?? 0),
+      };
+      request.onTokenUsage?.(this.tokenUsage);
     }
     const choice = response.choices[0];
     if (!choice) throw new Error('Model returned no choices.');

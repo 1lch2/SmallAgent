@@ -31,7 +31,7 @@
  *    每次 `llm.complete()` 一次性拿到完整响应，比流式实现简单很多。
  *    当前阶段优先可读性，延迟不是瓶颈。
  */
-import type { AssistantMessage, LLM, Message } from '../types';
+import type { AssistantMessage, LLM, Message, TokenUsage } from '../types';
 import { executeTool, tools } from '../tools';
 import { errorMessage } from '../utils/error';
 import { splitAssistantText } from '../utils/assistant-text';
@@ -49,7 +49,7 @@ export type AgentUpdate =
   | { kind: 'assistant_text_response'; text: string }
   | { kind: 'tool_call'; name: string; args: unknown; callId: string }
   | { kind: 'tool_result'; callId: string; name: string; args: Record<string, unknown>; output: string }
-  | { kind: 'token_usage'; usedTokens: number }
+  | { kind: 'token_usage'; usage: TokenUsage }
   | { kind: 'error'; message: string };
 
 /** 持有对话历史，并驱动模型与工具之间的 ReAct 循环。 */
@@ -79,7 +79,7 @@ export class Agent {
         msg = await this.llm.complete({
           messages: this.history,
           tools,
-          onTokenUsage: (usedTokens) => onUpdate({ kind: 'token_usage', usedTokens }),
+          onTokenUsage: (usage) => onUpdate({ kind: 'token_usage', usage }),
         });
       } catch (err) {
         // API 错误转为事件，不抛——本轮中止，但 Agent 实例保持可用，
