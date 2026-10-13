@@ -1,0 +1,39 @@
+path_base: repository-root
+scope: >-
+  覆盖当前 CLI 的启动与本地构建、Agent 对话与工具循环、模型接口适配、
+  终端交互、文件读写及命令执行主链路。内容基于源码核对，用于定位实现，
+  不代表真实模型端点、终端或跨平台行为已经运行验收。
+not_yet_mapped:
+  - GitHub Actions 发布流程与安装包分发
+  - VSCode 调试配置
+features:
+  - id: cli-startup
+    name: CLI 启动、环境配置与本地构建
+    keywords: [启动, 配置, dotenv, OPENAI_BASE_URL, SMALLAGENT_MODEL, OPENAI_API_KEY, npm, build, smallagent]
+    doc: docs/features/cli-startup.md
+    entrypoints: [src/index.tsx, package.json, scripts/build.mjs]
+  - id: agent-loop
+    name: Agent 对话历史、工具循环与系统提示词
+    keywords: [Agent, send, ReAct, 对话, 上下文, 工具调用, AgentUpdate, 系统提示词, buildSystemPrompt]
+    doc: docs/features/agent-loop.md
+    entrypoints: [src/core/agent.ts, src/core/system-prompt.ts]
+  - id: model-adapter
+    name: OpenAI 兼容模型接口与 Token 用量
+    keywords: [OpenAILLM, LLM, Chat Completions, 模型, 非流式, token, usedTokens, 协议转换]
+    doc: docs/features/model-adapter.md
+    entrypoints: [src/openai-llm.ts, src/types.ts]
+  - id: terminal-ui
+    name: 终端输入、消息展示与布局
+    keywords: [Ink, React, TUI, App, Message, 输入, Thinking, think, 工具摘要, resize, 状态栏]
+    doc: docs/features/terminal-ui.md
+    entrypoints: [src/ui/app.tsx, src/ui/message.tsx]
+  - id: file-tools
+    name: 文件读写与工作目录路径权限
+    keywords: [file_read, file_write, fileRead, fileWrite, usePermission, 文件, 权限, realpath, 工作目录]
+    doc: docs/features/file-tools.md
+    entrypoints: [src/tools/file-read.ts, src/tools/file-write.ts, src/hook/usePermission.ts]
+  - id: terminal-tool
+    name: Shell 命令执行与显式路径检查
+    keywords: [terminal_run, terminalRun, 命令, Shell, PowerShell, CMD, bash, stdout, stderr, extractCommandPaths]
+    doc: docs/features/terminal-tool.md
+    entrypoints: [src/tools/terminal-run.ts, src/utils/shell.ts]
