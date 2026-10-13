@@ -26,6 +26,7 @@
 - 自定义 Hook 使用 `use` 前缀和 camelCase 命名（例如：`usePermission`）。
 - Hook 必须在调用函数的顶层无条件调用，并保持每次调用顺序一致；禁止在条件、循环、条件表达式、try/catch/finally 或嵌套函数中调用。
 - 需要根据 Hook 结果分支时，先在顶层调用并保存结果，再根据结果执行条件逻辑。
+- UI 组件名所在文件同名，需要被引用的类型优先使用 interface 而不是 type。 组件 props 的 interface 命名遵循 `{组件名}Props` 的习惯。
 
 ## 行为边界
 

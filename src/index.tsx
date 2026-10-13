@@ -3,7 +3,7 @@ import { render } from 'ink';
 import { Agent } from './core/agent';
 import { OpenAILLM } from './openai-llm';
 import { errorMessage } from './utils/error';
-import { App } from './ui/app';
+import { App } from './ui/App';
 
 try {
   const baseURL = process.env.OPENAI_BASE_URL;

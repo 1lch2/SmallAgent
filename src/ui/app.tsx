@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Box, Text, useStdout } from 'ink';
-import TextInput from 'ink-text-input';
 import Spinner from 'ink-spinner';
 import { Agent, AgentUpdate } from '../core/agent';
-import { Entry, Message } from './message';
+import { Entry, Message } from './Message';
 import { version } from '../../package.json';
+import { CommandInput } from './CommandInput';
 
 /** 管理终端输入和消息列表，并展示 Agent 的输出事件。 */
 export function App({ agent, model }: { agent: Agent; model: string }) {
@@ -86,10 +86,7 @@ export function App({ agent, model }: { agent: Agent; model: string }) {
         )}
       </Box>
       <Box flexDirection='column' flexShrink={0}>
-        <Box borderStyle='round' borderColor='gray' paddingX={1}>
-          <Text color='green'>{'> '}</Text>
-          <TextInput value={input} onChange={setInput} onSubmit={handleSubmit} showCursor />
-        </Box>
+        <CommandInput value={input} onChange={setInput} onSubmit={handleSubmit} />
         <Box width='100%' justifyContent='space-between'>
           <Text color='gray'>{model}</Text>
           <Text color='gray'>{`${(usedTokens / 1000).toFixed(1)}k tokens`}</Text>
