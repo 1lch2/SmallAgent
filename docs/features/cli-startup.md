@@ -2,7 +2,7 @@
 
 [返回功能索引](../feature-map.yaml)
 
-覆盖状态：已核对入口及启动、构建主链路。最近核对：2026-10-13。未执行实际启动、构建或安装包验收。
+覆盖状态：已核对入口及启动、构建、退出主链路；构建和 Windows PowerShell PTY 退出检查通过。最近核对：2026-10-14。未执行安装包验收。
 
 ## 入口与关键实现
 
@@ -15,7 +15,7 @@
 
 `npm start` → `tsx src/index.tsx` → `render(<ProviderSession><App /></ProviderSession>)` → 读取本地已选连接并初始化适配器与 Agent，或进入未连接状态。启动不执行联网连接校验。
 
-启动时使用 `process.cwd()` 作为 Agent 工作目录；输出为 TTY 时清除可见内容和历史缓冲区。模型连接见[模型适配](model-adapter.md)，终端渲染见[终端交互](terminal-ui.md)。
+启动时使用 `process.cwd()` 作为 Agent 工作目录；输出为 TTY 时清除可见内容和历史缓冲区。Ink 退出后入口等待卸载完成，暂停 stdin、恢复非 raw 输入模式，清除 TUI 可见内容和历史缓冲区并恢复光标；等待 stdout 写入完成后结束 CLI 进程，不等待残留请求或活动句柄。该流程共用于 `/quit` 和 Ctrl+C，非 TTY 输出不写入清屏序列。进程退出不保证已启动的外部子进程或远端任务被取消。模型连接见[模型适配](model-adapter.md)，终端渲染见[终端交互](terminal-ui.md)。
 
 ## 验证入口与待补充范围
 
