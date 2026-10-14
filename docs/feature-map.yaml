@@ -13,7 +13,7 @@ features:
     entrypoints: [.github/workflows/release.yml, scripts/release-notes.mjs]
   - id: cli-startup
     name: CLI 启动与本地构建
-    keywords: [启动, 配置, 无环境变量, npm, build, smallagent]
+    keywords: [启动, 配置, 无环境变量, npm, build, liberi-code]
     doc: docs/features/cli-startup.md
     entrypoints: [src/index.tsx, package.json, scripts/build.mjs]
   - id: agent-loop

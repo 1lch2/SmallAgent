@@ -8,8 +8,8 @@
 
 - [src/index.tsx](../../src/index.tsx)：使用 Ink 渲染 `ProviderSession` 包裹的 `App`；不加载 `.env`，也不检查模型、端点或密钥环境变量。
 - [src/ui/ProviderSession.tsx](../../src/ui/ProviderSession.tsx)：首次启动允许未连接；有本地已选连接时直接使用保存的端点、模型和凭据，不发验证请求、查询模型或刷新缓存，详细保存和连接边界见[Provider](providers.md)。
-- [package.json](../../package.json)：定义 Node.js 最低版本、开发脚本和 `smallagent` CLI 入口。
-- [scripts/build.mjs](../../scripts/build.mjs)：使用 esbuild 将入口打包为 Node.js ESM 文件 `dist/smallagent.js`，保留外部包依赖并添加 CLI shebang。
+- [package.json](../../package.json)：定义 Node.js 最低版本、开发脚本和 `liberi-code` CLI 入口。
+- [scripts/build.mjs](../../scripts/build.mjs)：使用 esbuild 将入口打包为 Node.js ESM 文件 `dist/liberi-code.js`，保留外部包依赖并添加 CLI shebang。
 
 ## 调用链与边界
 

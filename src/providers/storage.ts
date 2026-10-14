@@ -33,8 +33,8 @@ export interface ModelCatalog {
 
 /** 默认配置位于用户目录，模型缓存位于系统临时目录。 */
 export const providerStoragePaths: ProviderStoragePaths = {
-  configFile: join(homedir(), '.smallagent', 'providers.json'),
-  cacheDirectory: join(tmpdir(), 'smallagent', 'models'),
+  configFile: join(homedir(), '.liberi', 'providers.json'),
+  cacheDirectory: join(tmpdir(), 'liberi-code', 'models'),
 };
 
 async function writeJSON(file: string, data: unknown) {

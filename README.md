@@ -1,8 +1,6 @@
-# SmallAgent
+# Liberi Code
 
-纯自娱自乐的极简 CLI Agent。只有最基础能力：读写文件，运行命令。
-
-目前通过权限hook限制工具调用范围为当前工作目录，但依然可能乱写你的文件，不要让任何模型或者 harness 调用这里的工具搞一些你不知道的事。
+学习 Agent 开发练手项目，别用。
 
 ## 快速开始
 
@@ -56,7 +54,7 @@ npm start
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Run SmallAgent",
+      "name": "Run Liberi Code",
       "type": "node",
       "request": "launch",
       "runtimeExecutable": "tsx",

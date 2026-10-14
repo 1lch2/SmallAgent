@@ -7,6 +7,6 @@ await build({
   format: 'esm',
   packages: 'external',
   jsx: 'automatic',
-  outfile: 'dist/smallagent.js',
+  outfile: 'dist/liberi-code.js',
   banner: { js: '#!/usr/bin/env node' },
 });

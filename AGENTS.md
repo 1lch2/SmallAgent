@@ -5,12 +5,12 @@
 
 ## 项目概况
 
-- SmallAgent 是极简终端 CLI Agent，基于 Node.js（>=22）、TypeScript、React 和 Ink，通过 OpenAI Chat Completions 兼容接口调用模型。
+- Liberi Code 是极简终端 CLI Agent，基于 Node.js（>=22）、TypeScript、React 和 Ink，通过 OpenAI Chat Completions 兼容接口调用模型。
 - 核心流程为「用户输入 → 请求模型 → 执行工具并反馈结果 → 继续请求」，直到模型不再调用工具；目前提供 `file_read`、`file_write` 和 `terminal_run` 三个工具。
 - `src/index.tsx` 负责读取环境配置并启动应用；`src/core/` 管理对话历史、Agent 循环和系统提示词；`src/openai-llm.ts` 负责模型接口适配。
 - `src/ui/` 负责终端交互与消息展示；`src/tools/` 实现工具；`src/hook/usePermission.ts` 负责工作目录内的路径权限检查；`src/types.ts` 定义公共协议类型，`src/utils/` 提供辅助函数。
-- 模型通过 `/provider` 选择内置服务商或自定义 OpenAI Chat Completion 端点，连接选项与 API Key 保存在 `~/.smallagent/providers.json`，模型清单缓存在系统临时目录；启动无需环境变量。
-- 常用命令：`npm start` 启动开发运行，`npm run typecheck` 检查类型，`npm run build` 构建 CLI 到 `dist/smallagent.js`。
+- 模型通过 `/provider` 选择内置服务商或自定义 OpenAI Chat Completion 端点，连接选项与 API Key 保存在 `~/.liberi/providers.json`，模型清单缓存在系统临时目录；启动无需环境变量。
+- 常用命令：`npm start` 启动开发运行，`npm run typecheck` 检查类型，`npm run build` 构建 CLI 到 `dist/liberi-code.js`。
 
 ## 注释
 

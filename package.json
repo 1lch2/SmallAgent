@@ -1,10 +1,10 @@
 {
-  "name": "smallagent",
+  "name": "liberi-code",
   "version": "0.1.3",
   "description": "Minimalist terminal agent powered by OpenAI-compatible APIs",
   "type": "module",
   "bin": {
-    "smallagent": "dist/smallagent.js"
+    "liberi-code": "dist/liberi-code.js"
   },
   "files": [
     "dist/**",

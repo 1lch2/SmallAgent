@@ -84,7 +84,7 @@ export function App() {
       {!entries.some((entry) => entry.type === 'user') && (
         <Box flexDirection='column' flexShrink={0} paddingLeft={1}>
           <Text wrap='truncate-end'>
-            <Text bold>{'>_ Small Agent'}</Text>
+            <Text bold>{'>_ Liberi Code'}</Text>
             <Text dimColor>{` (v${version})`}</Text>
           </Text>
           <Box paddingLeft={3}>
