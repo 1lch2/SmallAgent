@@ -16,6 +16,7 @@
 - [src/ui/Markdown.tsx](../../src/ui/Markdown.tsx)：`Markdown` 将 marked 内置 token 映射为 Ink 的 Box/Text，只接入 assistant 正式回复；使用 string-width 测量表格可见文本宽度，超宽时压缩列宽并在单元格内换行，保留行列分隔线。更窄时移除列间留白；窗口连最小列宽与分隔线都容纳不下时保持表格最小宽度。
 - [src/utils/assistant-text.ts](../../src/utils/assistant-text.ts)：`splitAssistantText` 按完整 `<think>...</think>` 标签拆分正文与思考块，清除边界空行并忽略空白块；由 Agent 调用后推送 UI 事件。
 - [src/utils/format.ts](../../src/utils/format.ts)：`truncate` 截断长工具输出，`formatArgs` 格式化通用工具参数。
+- [src/utils/terminal-text.ts](../../src/utils/terminal-text.ts)：`sanitizeTerminalText` 清除 assistant 文本自带的 ANSI 控制序列，将残留控制字符显示为转义文本，保留换行和制表符。正式回复在 Markdown 解析前及解析后的 token 显示字段上处理，覆盖字符实体生成的控制字符；thinking 仅在展示时处理，不改变原始消息和历史。
 
 ## 调用链与状态边界
 

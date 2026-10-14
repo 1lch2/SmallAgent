@@ -1,6 +1,7 @@
 import { Box, Text } from 'ink';
 import { formatArgs, truncate } from '../utils/format';
 import { Markdown } from './Markdown';
+import { sanitizeTerminalText } from '../utils/terminal-text';
 
 function getFileName(args: unknown): string {
   if (typeof args !== 'object' || args === null || !('path' in args) || typeof args.path !== 'string') {
@@ -38,7 +39,7 @@ export function Message({ entry, width }: MessageProps) {
       return (
         <Text>
           <Text color='gray'>{'Thinking\n'}</Text>
-          <Text dimColor>{entry.text}</Text>
+          <Text dimColor>{sanitizeTerminalText(entry.text)}</Text>
         </Text>
       );
     case 'assistant_text_response':

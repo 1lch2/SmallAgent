@@ -2,6 +2,7 @@ import { Fragment, memo, useMemo, type ReactNode } from 'react';
 import { Box, Text } from 'ink';
 import { Marked, type MarkedToken, type Token, type Tokens } from 'marked';
 import stringWidth from 'string-width';
+import { sanitizeTerminalText } from '../utils/terminal-text';
 
 /** 描述 Markdown 原文和扣除外层留白后的可用列宽。 */
 export interface MarkdownProps {
@@ -242,7 +243,17 @@ function renderBlocks(tokens: Token[], width: number, compact = false): ReactNod
 
 /** 将 Markdown 原文渲染为 Ink 内容，仅在正文变化时重新解析，在列宽变化时重新布局。 */
 export const Markdown = memo(function Markdown({ text, width }: MarkdownProps) {
-  const tokens = useMemo(() => parser.lexer(text), [text]);
+  const tokens = useMemo(() => {
+    const parsed = parser.lexer(sanitizeTerminalText(text));
+    // 数字字符实体可能在解析时生成控制字符，进入 Ink 前再次处理所有可显示字段。
+    parser.walkTokens(parsed, (token) => {
+      token.raw = sanitizeTerminalText(token.raw);
+      if ('text' in token) token.text = sanitizeTerminalText(token.text);
+      if ('href' in token) token.href = sanitizeTerminalText(token.href);
+      if ('lang' in token && token.lang) token.lang = sanitizeTerminalText(token.lang);
+    });
+    return parsed;
+  }, [text]);
   const contentWidth = Math.max(1, width);
   return (
     <Box flexDirection='column' width={contentWidth}>
