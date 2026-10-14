@@ -1,20 +1,16 @@
-import { compactCommand } from '../commands/compact';
-import { modelCommand } from '../commands/model';
-import { useQuitCommand } from '../commands/quit';
-import type { SlashCommand } from '../commands/types';
+import { useApp } from 'ink';
+import type { SlashCommand } from '../core/commands';
+import { useProviderSession } from './useProviderSession';
 
-/** 注册命令并提供统一分发入口；菜单和执行共用同一组命令。 */
-export function useCommands() {
-  const quitCommand = useQuitCommand();
-  const commands: readonly SlashCommand[] = [compactCommand, modelCommand, quitCommand];
+/** 组装应用内置命令，各命令通过闭包持有自身所需的能力。 */
+export function useCommands(): readonly SlashCommand[] {
+  const { exit } = useApp();
+  const { openProviders, openModels } = useProviderSession();
 
-  function executeCommand(input: string): boolean {
-    const name = input.trim().split(/\s/)[0];
-    const command = commands.find((item) => item.name === name);
-    if (!command) return false;
-    command.execute?.();
-    return true;
-  }
-
-  return { commands, executeCommand };
+  return [
+    { name: '/compact', description: '压缩上下文' },
+    { name: '/model', description: '切换模型', execute: openModels },
+    { name: '/provider', description: '连接模型服务商', execute: openProviders },
+    { name: '/quit', description: '退出TUI', execute: () => exit() },
+  ];
 }

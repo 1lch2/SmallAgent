@@ -68,6 +68,11 @@ export class Agent {
     });
   }
 
+  /** 切换模型连接并保留当前对话历史；应在当前回合结束后调用。 */
+  setLLM(llm: LLM): void {
+    this.llm = llm;
+  }
+
   /** 发送用户输入，并按处理过程推送 Agent 更新事件。 */
   async send(userInput: string, onUpdate: (u: AgentUpdate) => void): Promise<void> {
     this.history.push({ role: 'user', content: userInput });

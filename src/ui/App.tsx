@@ -1,21 +1,32 @@
 import { useEffect, useState } from 'react';
 import { Box, Text, useStdout } from 'ink';
 import Spinner from 'ink-spinner';
-import { Agent, AgentUpdate } from '../core/agent';
+import { AgentUpdate } from '../core/agent';
 import { Entry, Message } from './Message';
 import { version } from '../../package.json';
 import { CommandInput } from './CommandInput';
 import { Toolbar } from './Toolbar';
 import type { TokenUsage } from '../types';
+import { useProviderSession } from '../hook/useProviderSession';
+import { ProviderList } from './ProviderList';
+import { ModelList } from './ModelList';
+import { useCommands } from '../hook/useCommands';
 
 /** 管理终端输入和消息列表，并展示 Agent 的输出事件。 */
-export function App({ agent, model }: { agent: Agent; model: string }) {
+export function App() {
+  const session = useProviderSession();
+  const commands = useCommands();
+  const { agent, connection } = session;
   const { stdout } = useStdout();
   const [terminalRows, setTerminalRows] = useState(stdout.rows ?? 0);
   const [input, setInput] = useState('');
   const [entries, setEntries] = useState<Entry[]>([]);
   const [busy, setBusy] = useState(false);
   const [tokenUsage, setTokenUsage] = useState<TokenUsage>({ totalTokens: 0, promptTokens: 0, cachedTokens: 0 });
+
+  useEffect(() => {
+    setTokenUsage({ totalTokens: 0, promptTokens: 0, cachedTokens: 0 });
+  }, [connection]);
 
   useEffect(() => {
     const handleResize = () => setTerminalRows(stdout.rows ?? 0);
@@ -50,6 +61,10 @@ export function App({ agent, model }: { agent: Agent; model: string }) {
   async function handleSubmit(value: string) {
     const text = value.trim();
     if (!text || busy) return;
+    if (!agent || !connection) {
+      setEntries((previous) => [...previous, { type: 'error', text: '未连接任何模型，请使用 /provider 连接服务商。' }]);
+      return;
+    }
     setInput('');
     setEntries((prev) => [...prev, { type: 'user', text }]);
     setBusy(true);
@@ -60,6 +75,9 @@ export function App({ agent, model }: { agent: Agent; model: string }) {
     }
   }
 
+  if (session.view === 'providers') return <ProviderList busy={busy} />;
+  if (session.view === 'models') return <ModelList busy={busy} />;
+
   return (
     // 为 Ink 重绘后的换行保留一行；仅设置最小高度，让长消息自然延伸。
     <Box flexDirection='column' paddingX={1} minHeight={Math.max(0, terminalRows - 1)}>
@@ -69,7 +87,9 @@ export function App({ agent, model }: { agent: Agent; model: string }) {
           <Text dimColor>{` (v${version})`}</Text>
         </Text>
         <Box paddingLeft={3}>
-          <Text dimColor wrap='truncate-end'>{process.cwd()}</Text>
+          <Text dimColor wrap='truncate-end'>
+            {process.cwd()}
+          </Text>
         </Box>
       </Box>
       <Box flexDirection='column' flexGrow={1} flexShrink={0} marginBottom={1}>
@@ -88,8 +108,10 @@ export function App({ agent, model }: { agent: Agent; model: string }) {
         )}
       </Box>
       <Box flexDirection='column' flexShrink={0}>
-        <CommandInput value={input} onChange={setInput} onSubmit={handleSubmit} />
-        <Toolbar model={model} usage={tokenUsage} />
+        <CommandInput value={input} onChange={setInput} onSubmit={handleSubmit} commands={commands} />
+        {session.loadingConfig && <Text dimColor>正在读取本地配置...</Text>}
+        {session.error && <Text color='yellow'>{session.error} 使用 /provider 重新连接。</Text>}
+        <Toolbar model={connection?.options.model} usage={tokenUsage} />
       </Box>
     </Box>
   );

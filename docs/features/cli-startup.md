@@ -1,4 +1,4 @@
-# CLI 启动、环境配置与本地构建
+# CLI 启动与本地构建
 
 [返回功能索引](../feature-map.yaml)
 
@@ -6,13 +6,14 @@
 
 ## 入口与关键实现
 
-- [src/index.tsx](../../src/index.tsx)：加载 `dotenv/config`，检查 `OPENAI_BASE_URL`、`SMALLAGENT_MODEL`，传递可选的 `OPENAI_API_KEY`，创建 `OpenAILLM` 和 `Agent`，使用 Ink 渲染 `App`。初始化失败时输出错误并退出。
+- [src/index.tsx](../../src/index.tsx)：使用 Ink 渲染 `ProviderSession` 包裹的 `App`；不加载 `.env`，也不检查模型、端点或密钥环境变量。
+- [src/ui/ProviderSession.tsx](../../src/ui/ProviderSession.tsx)：首次启动允许未连接；有本地已选连接时直接使用保存的端点、模型和凭据，不发验证请求、查询模型或刷新缓存，详细保存和连接边界见[Provider](providers.md)。
 - [package.json](../../package.json)：定义 Node.js 最低版本、开发脚本和 `smallagent` CLI 入口。
 - [scripts/build.mjs](../../scripts/build.mjs)：使用 esbuild 将入口打包为 Node.js ESM 文件 `dist/smallagent.js`，保留外部包依赖并添加 CLI shebang。
 
 ## 调用链与边界
 
-`npm start` → `tsx src/index.tsx` → 模型适配器与 Agent 初始化 → `render(<App />)`。
+`npm start` → `tsx src/index.tsx` → `render(<ProviderSession><App /></ProviderSession>)` → 读取本地已选连接并初始化适配器与 Agent，或进入未连接状态。启动不执行联网连接校验。
 
 启动时使用 `process.cwd()` 作为 Agent 工作目录；输出为 TTY 时清除可见内容和历史缓冲区。模型连接见[模型适配](model-adapter.md)，终端渲染见[终端交互](terminal-ui.md)。
 

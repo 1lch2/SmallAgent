@@ -1,15 +1,15 @@
 path_base: repository-root
 scope: >-
   覆盖当前 CLI 的启动与本地构建、Agent 对话与工具循环、模型接口适配、
-  终端交互、文件读写及命令执行主链路。内容基于源码核对，用于定位实现，
+  Provider 连接、终端交互、文件读写及命令执行主链路。内容基于源码核对，用于定位实现，
   不代表真实模型端点、终端或跨平台行为已经运行验收。
 not_yet_mapped:
   - GitHub Actions 发布流程与安装包分发
   - VSCode 调试配置
 features:
   - id: cli-startup
-    name: CLI 启动、环境配置与本地构建
-    keywords: [启动, 配置, dotenv, OPENAI_BASE_URL, SMALLAGENT_MODEL, OPENAI_API_KEY, npm, build, smallagent]
+    name: CLI 启动与本地构建
+    keywords: [启动, 配置, 无环境变量, npm, build, smallagent]
     doc: docs/features/cli-startup.md
     entrypoints: [src/index.tsx, package.json, scripts/build.mjs]
   - id: agent-loop
@@ -22,11 +22,16 @@ features:
     keywords: [OpenAILLM, LLM, Chat Completions, 模型, 非流式, token, TokenUsage, cached_tokens, 缓存命中, 协议转换]
     doc: docs/features/model-adapter.md
     entrypoints: [src/openai-llm.ts, src/types.ts]
+  - id: providers
+    name: Provider 连接、模型选择、模型清单缓存与本地保存
+    keywords: [provider, ProviderList, ProviderSession, ModelList, List, model, 切换模型, 服务商, API Key, 模型列表, models, DeepSeek, MiniMax, GLM, Token Plan, Coding Plan, 自定义端点, 自动连接]
+    doc: docs/features/providers.md
+    entrypoints: [src/providers/catalog.ts, src/providers/connect.ts, src/ui/ProviderList.tsx]
   - id: terminal-ui
     name: 终端输入、消息展示与布局
     keywords: [Ink, React, TUI, App, Message, 输入, Thinking, think, 工具摘要, resize, 状态栏, 工具栏, Toolbar, 缓存命中率, 斜杠命令, slash, compact, model, quit, CommandInput]
     doc: docs/features/terminal-ui.md
-    entrypoints: [src/ui/App.tsx, src/ui/Toolbar.tsx, src/hook/useCommands.ts]
+    entrypoints: [src/ui/App.tsx, src/core/commands.ts, src/hook/useCommands.ts]
   - id: file-tools
     name: 文件读写与工作目录路径权限
     keywords: [file_read, file_write, fileRead, fileWrite, usePermission, 文件, 权限, realpath, 工作目录]

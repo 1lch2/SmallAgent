@@ -1,19 +1,24 @@
 import { useState } from 'react';
 import { Box, Text, useInput } from 'ink';
 import TextInput from 'ink-text-input';
-import { useCommands } from '../hook/useCommands';
+import { executeCommand } from '../core/commands';
+import type { SlashCommand } from '../core/commands';
+
+/** 受控输入值、提交回调及用于菜单和执行的命令列表。 */
+export interface CommandInputProps {
+  value: string;
+  onChange: (value: string) => void;
+  onSubmit: (value: string) => void;
+  commands: readonly SlashCommand[];
+}
 
 /** 带斜杠命令菜单的受控终端输入栏。 */
 export function CommandInput({
   value,
   onChange,
   onSubmit,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-  onSubmit: (value: string) => void;
-}) {
-  const { commands, executeCommand } = useCommands();
+  commands,
+}: CommandInputProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [inputRevision, setInputRevision] = useState(0);
   const menuVisible = value.startsWith('/') && !/\s/.test(value);
@@ -54,7 +59,8 @@ export function CommandInput({
           }}
           onSubmit={(text) => {
             if (menuVisible) completeCommand();
-            else if (!executeCommand(text)) onSubmit(text);
+            else if (!executeCommand(commands, text)) onSubmit(text);
+            else onChange('');
           }}
           showCursor
         />

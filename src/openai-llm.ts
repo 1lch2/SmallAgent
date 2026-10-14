@@ -1,6 +1,7 @@
 import OpenAI from 'openai';
 import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 import type { AssistantMessage, CompletionRequest, LLM, Message, TokenUsage } from './types';
+import { errorMessage } from './utils/error';
 
 /** 描述 OpenAI 兼容端点的密钥、地址和模型配置。 */
 export interface OpenAILLMOptions {
@@ -49,6 +50,10 @@ export class OpenAILLM implements LLM {
       model: this.model,
       messages: request.messages.map(toOpenAIMessage),
       tools: request.tools.map((tool) => ({ type: 'function', function: tool })),
+    }).catch((error: unknown) => {
+      const message = errorMessage(error);
+      // 服务端可能在错误正文中回显凭据，避免将密钥传入界面。
+      throw new Error(message.replaceAll(this.client.apiKey, '[已隐藏]'));
     });
     if (response.usage) {
       this.tokenUsage = {

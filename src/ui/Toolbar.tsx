@@ -10,12 +10,13 @@ function formatTokenCount(tokens: number): string {
 
 /** 工具栏所需的模型名称与累计用量，不依赖 App 或 Agent。 */
 export interface ToolbarProps {
-  model: string;
+  model?: string;
   usage: TokenUsage;
 }
 
 /** 展示模型名称、累计 Token 用量、缓存命中量与输入缓存命中率。 */
 export function Toolbar({ model, usage }: ToolbarProps) {
+  if (!model) return <Text color='gray'>未连接任何模型 · 使用 /provider 连接服务商</Text>;
   const cacheHitRate = usage.promptTokens > 0 ? usage.cachedTokens / usage.promptTokens : 0;
 
   return (

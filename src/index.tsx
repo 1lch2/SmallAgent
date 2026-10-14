@@ -1,35 +1,13 @@
-import 'dotenv/config';
 import { render } from 'ink';
-import { Agent } from './core/agent';
-import { OpenAILLM } from './openai-llm';
-import { errorMessage } from './utils/error';
 import { App } from './ui/App';
+import { ProviderSession } from './ui/ProviderSession';
 
-try {
-  const baseURL = process.env.OPENAI_BASE_URL;
-  const model = process.env.SMALLAGENT_MODEL;
-  if (!baseURL) {
-    throw new Error('OPENAI_BASE_URL is required. Set it in .env or as an environment variable.');
-  }
-  if (!model) {
-    throw new Error('SMALLAGENT_MODEL is required. Set it in .env or as an environment variable.');
-  }
-
-  const llm = new OpenAILLM({
-    apiKey: process.env.OPENAI_API_KEY,
-    baseURL,
-    model,
-  });
-  const agent = new Agent({
-    llm,
-    cwd: process.cwd(),
-  });
-  if (process.stdout.isTTY) {
-    // 进入界面时清除可见内容和历史缓冲区，并将光标移到左上角。
-    process.stdout.write('\u001B[2J\u001B[3J\u001B[H');
-  }
-  render(<App agent={agent} model={model} />);
-} catch (err) {
-  console.error(errorMessage(err));
-  process.exit(1);
+if (process.stdout.isTTY) {
+  // 进入界面时清除可见内容和历史缓冲区，并将光标移到左上角。
+  process.stdout.write('\u001B[2J\u001B[3J\u001B[H');
 }
+render(
+  <ProviderSession>
+    <App />
+  </ProviderSession>,
+);
