@@ -2,17 +2,18 @@
 
 [返回功能索引](../feature-map.yaml)
 
-覆盖状态：已核对输入提交、事件展示和尺寸变化主链路，斜杠菜单已通过 Ink 模拟输入输出流交互检查。最近核对：2026-10-13。未进行真实终端交互验收。
+覆盖状态：已核对输入提交、事件展示和尺寸变化主链路，斜杠菜单已通过 Ink 模拟输入输出流交互检查。最近核对：2026-10-14。Markdown 接入包含当前工作区改动，未进行真实终端交互验收。
 
 ## 入口与关键实现
 
-- [src/ui/App.tsx](../../src/ui/App.tsx)：`App` 管理输入、展示条目、忙碌状态、Token 用量和终端行数；提交时调用 Agent，订阅并清理 stdout 的 `resize` 监听。
+- [src/ui/App.tsx](../../src/ui/App.tsx)：`App` 管理输入、展示条目、忙碌状态、Token 用量和终端行列数；提交时调用 Agent，订阅并清理 stdout 的 `resize` 监听；向消息传递扣除左右 padding 后的可用列宽。
 - [src/ui/ProviderList.tsx](../../src/ui/ProviderList.tsx)：独立服务商选择和凭据输入界面，由 `/provider` 切换进入；状态和连接归属见[Provider](providers.md)。聊天组件保持挂载，切回时保留消息和历史。
 - [src/ui/Toolbar.tsx](../../src/ui/Toolbar.tsx)：`Toolbar` 通过 `ToolbarProps` 接收模型名称和累计 `TokenUsage`，展示总用量、缓存命中 token 数及命中率；总量和缓存量共用格式，一万以下显示带千位分隔符的整数，从一万起使用“万”、一亿起使用“亿”，保留一位小数；不依赖 App 或 Agent，窄终端可换行。
 - [src/ui/CommandInput.tsx](../../src/ui/CommandInput.tsx)：`CommandInput` 通过 `CommandInputProps.commands` 接收命令列表，菜单与执行共用该列表，不依赖 Provider 会话或内置命令。管理输入框下方的斜杠菜单、前缀筛选、循环上下键导航、Tab／回车补全，并在补全后将光标移至末尾。
 - [src/core/commands.ts](../../src/core/commands.ts)：`SlashCommand` 定义名称、说明和可选无参执行回调；`executeCommand` 接收列表和输入，按首词匹配并执行，返回是否消费输入。不注册具体功能，也不定义功能能力集合。
 - [src/hook/useCommands.ts](../../src/hook/useCommands.ts)：应用内置命令的组装入口，顶层接入 Ink 退出和会话页面能力，通过闭包注册 `/compact`、`/model`、`/provider`、`/quit`；仅 `/compact` 继续只注册。`App` 调用该 Hook 并将列表传给 `CommandInput`，不参与命令匹配或分发。
 - [src/ui/Message.tsx](../../src/ui/Message.tsx)：`Entry` 定义展示类型，`Message` 渲染用户、思考、回复、工具摘要和错误。
+- [src/ui/Markdown.tsx](../../src/ui/Markdown.tsx)：`Markdown` 将 marked 内置 token 映射为 Ink 的 Box/Text，只接入 assistant 正式回复；使用 string-width 测量表格可见文本宽度，超宽时压缩列宽并在单元格内换行，保留行列分隔线。更窄时移除列间留白；窗口连最小列宽与分隔线都容纳不下时保持表格最小宽度。
 - [src/utils/assistant-text.ts](../../src/utils/assistant-text.ts)：`splitAssistantText` 按完整 `<think>...</think>` 标签拆分正文与思考块，清除边界空行并忽略空白块；由 Agent 调用后推送 UI 事件。
 - [src/utils/format.ts](../../src/utils/format.ts)：`truncate` 截断长工具输出，`formatArgs` 格式化通用工具参数。
 
@@ -30,8 +31,12 @@
 
 文件工具调用只展示文件名，`App` 不追加其结果事件，包含错误文本的文件工具结果也走这一过滤分支。命令调用展示命令文本，命令结果经截断显示。模型用量的计算归属见[模型适配](model-adapter.md)。
 
+`assistant_text_response` → `Message` → `Markdown`。支持标题、段落、粗体、斜体、删除线、下划线样式的行内代码、列表与任务列表、引用、代码块、分隔线、链接和表格。链接保留文字与地址；图片保留替代文字与地址；HTML 以源码展示，数学公式及 Mermaid 无专用渲染。代码块显示语言标签并保留空行和缩进，Tab 展开为四个空格，不做语法颜色高亮。表格按包含链接地址的可见文本测量自然列宽；放不下时优先保留短列并压缩长列，单元格内自动换行，行间横线和贯穿行高的列分隔线保留表格结构。
+
+组件使用 `memo` 跳过正文和列宽均未变化的重渲染，以 `useMemo` 按正文缓存解析结果；列宽变化只重新布局，不建立全局缓存。仍使用完整消息输入，不包含流式增量解析。原始消息及 Agent 历史不写入渲染结果，thinking、用户输入和工具输出维持原有展示。
+
 首次发送聊天消息前显示标题与工作目录；用户消息加入列表后移除该区域，由用户和 Agent 消息占据聊天区。空白提交、斜杠命令及未连接时的发送错误不触发隐藏；切换服务商或模型后返回聊天也不重新显示标题。布局保留消息区、输入框，以及独立 `Toolbar` 展示的模型名、累计总 Token、缓存命中量和命中率。命中率为累计缓存命中量除以累计输入用量，输入用量为 0 时显示 0.0%；不平均各请求的百分比。最小高度随终端行数变化，长消息自然延伸；启动清屏入口见[启动与构建](cli-startup.md)。
 
 ## 验证入口与待补充范围
 
-现有检查入口为 `npm run typecheck`，交互入口为 `npm start`。未发现组件测试或终端 E2E 入口；中文输入、终端缩放和长消息滚动的实际表现未运行核验。
+现有检查入口为 `npm run typecheck`，交互入口为 `npm start`。Markdown 已通过真实 Ink 渲染器配合模拟终端流检查宽窄表格、任务与嵌套列表、代码空行和缩进、消息类型隔离、重复渲染与列宽变化时的解析缓存。未新增单元测试或持久化终端 E2E 入口；真实终端中文输入、窗口缩放和长消息滚动仍未运行核验。

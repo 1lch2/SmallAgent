@@ -19,6 +19,7 @@ export function App() {
   const { agent, connection } = session;
   const { stdout } = useStdout();
   const [terminalRows, setTerminalRows] = useState(stdout.rows ?? 0);
+  const [terminalColumns, setTerminalColumns] = useState(stdout.columns ?? 80);
   const [input, setInput] = useState('');
   const [entries, setEntries] = useState<Entry[]>([]);
   const [busy, setBusy] = useState(false);
@@ -29,7 +30,10 @@ export function App() {
   }, [connection]);
 
   useEffect(() => {
-    const handleResize = () => setTerminalRows(stdout.rows ?? 0);
+    const handleResize = () => {
+      setTerminalRows(stdout.rows ?? 0);
+      setTerminalColumns(stdout.columns ?? 80);
+    };
     stdout.on('resize', handleResize);
     return () => {
       stdout.off('resize', handleResize);
@@ -97,7 +101,7 @@ export function App() {
       <Box flexDirection='column' flexGrow={1} flexShrink={0} marginBottom={1}>
         {entries.map((entry, i) => (
           <Box key={i} flexDirection='column' marginBottom={1}>
-            <Message entry={entry} />
+            <Message entry={entry} width={Math.max(1, terminalColumns - 2)} />
           </Box>
         ))}
         {busy && (

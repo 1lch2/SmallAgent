@@ -1,13 +1,9 @@
 import { Box, Text } from 'ink';
 import { formatArgs, truncate } from '../utils/format';
+import { Markdown } from './Markdown';
 
 function getFileName(args: unknown): string {
-  if (
-    typeof args !== 'object' ||
-    args === null ||
-    !('path' in args) ||
-    typeof args.path !== 'string'
-  ) {
+  if (typeof args !== 'object' || args === null || !('path' in args) || typeof args.path !== 'string') {
     return 'unknown';
   }
   return args.path.split(/[\\/]/).filter(Boolean).pop() || 'unknown';
@@ -22,35 +18,41 @@ export type Entry =
   | { type: 'tool_result'; name: string; args: Record<string, unknown>; text: string }
   | { type: 'error'; text: string };
 
+/** 描述消息内容及正文可用列宽。 */
+export interface MessageProps {
+  entry: Entry;
+  width: number;
+}
+
 /** 根据消息类型展示用户输入、思考、正式回复和工具事件。 */
-export function Message({ entry }: { entry: Entry }) {
+export function Message({ entry, width }: MessageProps) {
   switch (entry.type) {
     case 'user':
       return (
-        <Box flexDirection="column">
-          <Text color="green">User</Text>
+        <Box flexDirection='column'>
+          <Text color='green'>User</Text>
           <Text>{entry.text}</Text>
         </Box>
       );
     case 'assistant_text_thinking':
       return (
         <Text>
-          <Text color="gray">{'Thinking\n'}</Text>
+          <Text color='gray'>{'Thinking\n'}</Text>
           <Text dimColor>{entry.text}</Text>
         </Text>
       );
     case 'assistant_text_response':
       return (
-        <Box flexDirection="column">
-          <Text color="cyan">Agent</Text>
-          <Text>{entry.text}</Text>
+        <Box flexDirection='column'>
+          <Text color='cyan'>Agent</Text>
+          <Markdown text={entry.text} width={width} />
         </Box>
       );
     case 'tool_call': {
       if (entry.name === 'file_read' || entry.name === 'file_write') {
         const operation = entry.name === 'file_read' ? 'Read' : 'Write';
         return (
-          <Text color="green" backgroundColor="black">
+          <Text color='green' backgroundColor='black'>
             {`→ ${operation}: ${getFileName(entry.args)} `}
           </Text>
         );
@@ -63,22 +65,22 @@ export function Message({ entry }: { entry: Entry }) {
           typeof entry.args.command === 'string'
             ? entry.args.command
             : '';
-        return <Text color="blue" backgroundColor="black">{`$ ${command}`}</Text>;
+        return <Text color='blue' backgroundColor='black'>{`$ ${command}`}</Text>;
       }
-      return <Text color="yellow">{`→ ${entry.name}(${formatArgs(entry.args)})`}</Text>;
+      return <Text color='yellow'>{`→ ${entry.name}(${formatArgs(entry.args)})`}</Text>;
     }
     case 'tool_result': {
       if (entry.name === 'file_read' || entry.name === 'file_write') {
         const operation = entry.name === 'file_read' ? 'Read' : 'Write';
         return (
-          <Text color="green" backgroundColor="black">
+          <Text color='green' backgroundColor='black'>
             {`→ ${operation}: ${getFileName(entry.args)} `}
           </Text>
         );
       }
-      return <Text color="gray">{truncate(entry.text)}</Text>;
+      return <Text color='gray'>{truncate(entry.text)}</Text>;
     }
     case 'error':
-      return <Text color="red">{`! ${entry.text}`}</Text>;
+      return <Text color='red'>{`⨂ ${entry.text}`}</Text>;
   }
 }
