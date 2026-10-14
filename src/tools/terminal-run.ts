@@ -1,29 +1,32 @@
-import { exec } from 'node:child_process';
+import { exec, execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import * as path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { usePermission } from '../hook/usePermission';
+import { checkTerminalCommandPermission } from '../utils/command-permission/terminal-permission';
+import { getBashEnvironment } from '../utils/command-permission/bash-paths';
 import type { ToolDefinition } from '../types';
-import { getCurrentShellInfo, type ShellType } from '../utils/shell';
+import { getCurrentShellInfo } from '../utils/shell';
 
 const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
-/** 检查命令中的显式路径权限后，在指定工作目录中执行命令。 */
+/** 在指定工作目录中执行命令；PowerShell 和 Bash 执行命令路径检查。 */
 export async function terminalRun(args: Record<string, unknown>, cwd: string): Promise<string> {
   const command = String(args.command);
   const shell = getCurrentShellInfo();
-  const pathAnalysis = extractCommandPaths(command, cwd, shell.type);
-  const hasPermission = await usePermission(pathAnalysis.paths);
+  const hasPermission = await checkTerminalCommandPermission(command, cwd, shell);
 
-  if (!pathAnalysis.isValid || !hasPermission) {
-    throw new Error('权限不足：命令含有无法解析或超出工作目录的路径。');
+  if (!hasPermission) {
+    throw new Error('权限不足：命令含有超出工作目录的路径，或无法静态确认路径的 Shell 语法。请使用直接的路径参数，避免动态路径和切换目录。');
   }
 
-  const { stdout, stderr } = await execAsync(command, {
-    cwd,
-    maxBuffer: 10 * 1024 * 1024,
-    shell: shell.path,
-  });
+  const options = { cwd, maxBuffer: 10 * 1024 * 1024, windowsHide: true };
+  const { stdout, stderr } = shell.type === 'powershell'
+    ? await execFileAsync(shell.path, [
+      '-NoLogo', '-NoProfile', '-NonInteractive', '-Command',
+      `[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new();\n${command}`,
+    ], options)
+    : shell.type === 'bash'
+      ? await execFileAsync(shell.path, ['--noprofile', '--norc', '-p', '-c', command], { ...options, env: getBashEnvironment() })
+      : await execAsync(command, { ...options, shell: shell.path });
   const out = (stdout ?? '').trim();
   const err = (stderr ?? '').trim();
   return [out && `STDOUT:\n${out}`, err && `STDERR:\n${err}`]
@@ -31,161 +34,12 @@ export async function terminalRun(args: Record<string, unknown>, cwd: string): P
     .join('\n\n') || '(no output)';
 }
 
-function extractCommandPaths(
-  command: string,
-  cwd: string,
-  shellType: ShellType,
-): { paths: string[]; isValid: boolean } {
-  const tokens = tokenizeCommand(command, shellType);
-  if (!tokens) return { paths: [], isValid: false };
-
-  const paths = new Set<string>();
-  for (const token of tokens) {
-    for (const candidate of getPathCandidates(token)) {
-      if (!isPathLike(candidate) || /^https?:\/\//i.test(candidate)) continue;
-
-      const resolvedPath = resolveCommandPath(candidate, cwd);
-      if (!resolvedPath) return { paths: [...paths], isValid: false };
-      paths.add(resolvedPath);
-    }
-  }
-
-  return { paths: [...paths], isValid: true };
-}
-
-function tokenizeCommand(command: string, shellType: ShellType): string[] | null {
-  const tokens: string[] = [];
-  const isWindows = process.platform === 'win32';
-  const isPowerShell = shellType === 'powershell';
-  let value = '';
-  let quote: '"' | "'" | null = null;
-  let hasValue = false;
-
-  const pushValue = () => {
-    if (hasValue) tokens.push(value);
-    value = '';
-    hasValue = false;
-  };
-
-  for (let index = 0; index < command.length; index += 1) {
-    const character = command[index];
-
-    if (quote) {
-      if (
-        isPowerShell &&
-        quote === "'" &&
-        character === "'" &&
-        command[index + 1] === "'"
-      ) {
-        value += "'";
-        index += 1;
-        hasValue = true;
-        continue;
-      }
-      if (character === quote) {
-        quote = null;
-      } else if (isPowerShell && quote === '"' && character === '`' && index + 1 < command.length) {
-        value += command[++index];
-      } else if (!isWindows && quote === '"' && character === '\\' && index + 1 < command.length) {
-        value += command[++index];
-      } else {
-        value += character;
-      }
-      hasValue = true;
-      continue;
-    }
-
-    if (isPowerShell && character === '`' && index + 1 < command.length) {
-      value += command[++index];
-      hasValue = true;
-      continue;
-    }
-    if (!isWindows && character === '\\' && index + 1 < command.length) {
-      value += command[++index];
-      hasValue = true;
-      continue;
-    }
-    if (isWindows && shellType === 'cmd' && character === '^' && index + 1 < command.length) {
-      value += command[++index];
-      hasValue = true;
-      continue;
-    }
-    if (character === '"' || ((!isWindows || isPowerShell) && character === "'")) {
-      quote = character;
-      hasValue = true;
-      continue;
-    }
-    if (/\s/.test(character)) {
-      pushValue();
-      continue;
-    }
-    if (';&|<>'.includes(character)) {
-      pushValue();
-      while (index + 1 < command.length && '&|<>'.includes(command[index + 1])) {
-        const nextCharacter = command[index + 1];
-        if (nextCharacter !== character || !['&', '|', '<', '>'].includes(character)) break;
-        index += 1;
-      }
-      continue;
-    }
-
-    value += character;
-    hasValue = true;
-  }
-
-  if (quote) return null;
-  pushValue();
-  return tokens;
-}
-
-function getPathCandidates(token: string): string[] {
-  const candidates = [token];
-  const equalsIndex = token.indexOf('=');
-  if (equalsIndex >= 0) candidates.push(token.slice(equalsIndex + 1));
-
-  const attachedOption = token.match(/^-{1,2}[A-Za-z][A-Za-z0-9_-]*(.+)$/);
-  if (attachedOption) candidates.push(attachedOption[1].replace(/^=/, ''));
-
-  return [...new Set(candidates)];
-}
-
-function isPathLike(value: string): boolean {
-  if (/^file:\/\//i.test(value)) return true;
-  return (
-    path.isAbsolute(value) ||
-    /^[A-Za-z]:/.test(value) ||
-    /^\\\\/.test(value) ||
-    /^~(?:[\\/]|$)/.test(value) ||
-    /^\.{1,2}(?:[\\/]|$)/.test(value) ||
-    /[\\/]/.test(value)
-  );
-}
-
-function resolveCommandPath(value: string, cwd: string): string | null {
-  if (/^file:\/\//i.test(value)) {
-    try {
-      return path.resolve(cwd, fileURLToPath(value));
-    } catch {
-      return null;
-    }
-  }
-
-  if (value.startsWith('~')) {
-    const home = process.env.USERPROFILE || process.env.HOME;
-    if (!home || !/^~(?:[\\/]|$)/.test(value)) return null;
-    value = path.join(home, value.slice(1).replace(/^[\\/]/, ''));
-  }
-
-  if (/[`$]/.test(value) || /%[^%]+%/.test(value)) return null;
-  return path.resolve(cwd, value);
-}
-
 /** 注册终端执行工具及其模型参数定义。 */
 export const terminalRunTool = {
   definition: {
     name: 'terminal_run',
     description:
-      'Run a shell command from the working directory. Explicit path arguments are checked against this directory. Returns combined stdout and stderr.',
+      'Run a shell command from the working directory. PowerShell and Bash commands undergo path validation against this directory; CMD and sh skip this check. Use direct literal path arguments; dynamic paths, assignments, directory changes and nested shells are rejected. Returns combined stdout and stderr.',
     parameters: {
       type: 'object',
       properties: {

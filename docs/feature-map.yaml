@@ -38,11 +38,11 @@ features:
     entrypoints: [src/ui/App.tsx, src/core/commands.ts, src/hook/useCommands.ts]
   - id: file-tools
     name: 文件读写与工作目录路径权限
-    keywords: [file_read, file_write, fileRead, fileWrite, usePermission, 文件, 权限, realpath, 工作目录]
+    keywords: [file_read, file_write, fileRead, fileWrite, usePathValidation, 文件, 权限, realpath, 工作目录]
     doc: docs/features/file-tools.md
-    entrypoints: [src/tools/file-read.ts, src/tools/file-write.ts, src/hook/usePermission.ts]
+    entrypoints: [src/tools/file-read.ts, src/tools/file-write.ts, src/hook/usePathValidation.ts]
   - id: terminal-tool
-    name: Shell 命令执行与显式路径检查
-    keywords: [terminal_run, terminalRun, 命令, Shell, PowerShell, CMD, bash, stdout, stderr, extractCommandPaths]
+    name: Shell 命令执行与 PowerShell、Bash 路径检查
+    keywords: [terminal_run, terminalRun, 命令, Shell, PowerShell, CMD, bash, stdout, stderr, checkTerminalCommandPermission, getBashPaths, 路径权限, 通配符, 重定向, 符号链接]
     doc: docs/features/terminal-tool.md
-    entrypoints: [src/tools/terminal-run.ts, src/utils/shell.ts]
+    entrypoints: [src/tools/terminal-run.ts, src/utils/command-permission/terminal-permission.ts, src/utils/shell.ts]

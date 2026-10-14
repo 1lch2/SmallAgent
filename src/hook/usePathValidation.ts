@@ -2,7 +2,7 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 
 /** 检查一个或多个路径是否都位于当前工作目录内。 */
-export async function usePermission(targetPaths: string | string[]): Promise<boolean> {
+export async function usePathValidation(targetPaths: string | string[]): Promise<boolean> {
   const paths = Array.isArray(targetPaths) ? targetPaths : [targetPaths];
   if (paths.some((targetPath) => !targetPath.trim())) return false;
 
