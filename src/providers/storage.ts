@@ -64,13 +64,18 @@ export async function loadProviderSettings(paths = providerStoragePaths): Promis
   }
 }
 
+/** 原子保存完整服务商配置及当前选择。 */
+export async function saveProviderSettings(settings: ProviderSettings, paths = providerStoragePaths): Promise<void> {
+  await writeJSON(paths.configFile, settings);
+}
+
 /** 保存连接选项并选中该服务商，不覆盖其他服务商的选项。 */
 export async function saveProviderConnection(connection: SavedConnection, paths = providerStoragePaths): Promise<void> {
   const settings = await loadProviderSettings(paths);
-  await writeJSON(paths.configFile, {
+  await saveProviderSettings({
     selectedProviderId: connection.providerId,
     connections: [...settings.connections.filter((item) => item.providerId !== connection.providerId), connection],
-  } satisfies ProviderSettings);
+  }, paths);
 }
 
 function modelCacheFile(connection: Pick<SavedConnection, 'providerId' | 'baseURL' | 'apiKey'>, paths: ProviderStoragePaths) {

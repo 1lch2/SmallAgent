@@ -5,7 +5,7 @@ import type { ProviderDefinition } from '../providers/catalog';
 import { providers } from '../providers/catalog';
 import { connectProvider, fetchModelCatalog } from '../providers/connect';
 import type { ProviderConnection } from '../providers/connect';
-import { loadModelCatalog, loadProviderSettings, providerStoragePaths, saveModelCatalog, saveProviderConnection } from '../providers/storage';
+import { loadModelCatalog, loadProviderSettings, providerStoragePaths, saveModelCatalog, saveProviderConnection, saveProviderSettings } from '../providers/storage';
 import type { ModelCatalog, ProviderSettings, ProviderStoragePaths } from '../providers/storage';
 import { OpenAILLM } from '../openai-llm';
 
@@ -22,6 +22,7 @@ export interface ProviderSessionState {
   closeSelection: () => void;
   loadModels: () => Promise<ModelCatalog>;
   selectModel: (model: string) => Promise<void>;
+  removeProvider: (providerId: string) => Promise<void>;
   connect: (provider: ProviderDefinition, apiKey: string, baseURL?: string) => Promise<void>;
 }
 
@@ -119,6 +120,42 @@ export function ProviderSession({ children, storagePaths = providerStoragePaths 
     setView('chat');
   }
 
+  async function removeProvider(providerId: string) {
+    const saved = await loadProviderSettings(storagePaths);
+    if (!saved.connections.some((item) => item.providerId === providerId)) return;
+    const remaining = saved.connections.filter((item) => item.providerId !== providerId);
+    const provider = providers.find((item) => remaining.some((option) => option.providerId === item.id));
+    let next: ProviderConnection | undefined;
+    if (provider) {
+      const options = remaining.find((item) => item.providerId === provider.id)!;
+      let catalog = connection?.options.providerId === provider.id ? connection.catalog : undefined;
+      catalog ??= await loadModelCatalog(options, storagePaths);
+      if (!catalog?.models.length) {
+        catalog = await fetchModelCatalog(provider, options.apiKey, options.baseURL);
+        await saveModelCatalog(options, catalog, storagePaths);
+      }
+      const selected = { ...options, model: catalog.models[0]! };
+      next = { options: selected, catalog, llm: new OpenAILLM(selected) };
+    }
+    const updated: ProviderSettings = {
+      selectedProviderId: next?.options.providerId,
+      connections: remaining.map((item) => item.providerId === next?.options.providerId ? next.options : item),
+    };
+    try {
+      await saveProviderSettings(updated, storagePaths);
+    } catch {
+      throw new Error('供应商配置删除失败，请检查本地配置文件。');
+    }
+    setSettings(updated);
+    setError(undefined);
+    if (next) activate(next);
+    else {
+      agentRef.current = undefined;
+      setConnection(undefined);
+      setView('chat');
+    }
+  }
+
   return (
     <ProviderSessionContext.Provider
       value={{
@@ -131,6 +168,7 @@ export function ProviderSession({ children, storagePaths = providerStoragePaths 
         connect,
         loadModels,
         selectModel,
+        removeProvider,
         openProviders: () => setView('providers'),
         openModels: () => setView('models'),
         closeSelection: () => setView('chat'),

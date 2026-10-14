@@ -21,11 +21,14 @@ export function ProviderList({ busy }: ProviderListProps) {
   const [apiKey, setApiKey] = useState('');
   const [baseURL, setBaseURL] = useState('');
   const [connecting, setConnecting] = useState(false);
+  const [removing, setRemoving] = useState(false);
+  const [deletePending, setDeletePending] = useState(false);
   const [error, setError] = useState<string>();
   const provider = providers[selectedIndex]!;
-  const blocked = busy || session.loadingConfig || connecting;
+  const blocked = busy || session.loadingConfig || connecting || removing;
 
   function selectProvider() {
+    setDeletePending(false);
     const saved = session.settings.connections.find((item) => item.providerId === provider.id);
     setApiKey(saved?.apiKey ?? '');
     setBaseURL(provider.baseURL ?? saved?.baseURL ?? '');
@@ -33,15 +36,43 @@ export function ProviderList({ busy }: ProviderListProps) {
     setStep(provider.baseURL ? 'key' : 'endpoint');
   }
 
-  useInput((_input, key) => {
-    if (key.escape && !connecting) {
+  useInput((input, key) => {
+    const deleteKey = input.toLowerCase() === 'd' && !key.ctrl && !key.meta;
+    if (!deleteKey) setDeletePending(false);
+    if (key.escape && !connecting && !removing) {
       setError(undefined);
       setApiKey('');
       if (step === 'list') session.closeSelection();
       else setStep('list');
       return;
     }
+    if (blocked || step !== 'list' || !deleteKey) return;
+    if (!session.settings.connections.some((item) => item.providerId === provider.id)) return;
+    if (!deletePending) {
+      setError(undefined);
+      setDeletePending(true);
+    } else {
+      setDeletePending(false);
+      void removeProvider();
+    }
   });
+
+  async function removeProvider() {
+    setRemoving(true);
+    setError(undefined);
+    try {
+      await session.removeProvider(provider.id);
+      const nextIndex = providers.findIndex((item) => item.id !== provider.id
+        && session.settings.connections.some((option) => option.providerId === item.id));
+      setSelectedIndex(Math.max(0, nextIndex));
+      setApiKey('');
+      setBaseURL('');
+    } catch (err) {
+      setError(`移除失败：${err instanceof Error ? err.message : '未知错误。'}`);
+    } finally {
+      setRemoving(false);
+    }
+  }
 
   async function submitKey(value: string) {
     if (blocked) return;
@@ -64,17 +95,19 @@ export function ProviderList({ busy }: ProviderListProps) {
   return (
     <Box flexDirection='column' paddingX={2} paddingY={1}>
       <Text bold>选择 Provider</Text>
-      <Text dimColor>↑↓ 选择 · Enter 确认 · Esc 返回</Text>
+      <Text dimColor>↑↓ 选择 · Enter 确认 · D 移除配置 · Esc 返回</Text>
       <List
         items={providers.map((item) => ({
           id: item.id,
-          label: `${item.name}${session.connection?.options.providerId === item.id ? '（已连接）' : ''}`,
+          label: `${item.name}${session.connection?.options.providerId === item.id ? '（已连接）'
+            : session.settings.connections.some((option) => option.providerId === item.id) ? '（已配置）' : ''}`,
         }))}
         selectedIndex={selectedIndex}
-        onChange={setSelectedIndex}
+        onChange={(index) => { setDeletePending(false); setSelectedIndex(index); }}
         onSelect={selectProvider}
         active={!blocked && step === 'list'}
       />
+      {deletePending && <Text color='yellow'>再次按 D 移除 {provider.name} 的配置，按其他键取消。</Text>}
       {step !== 'list' && <Text dimColor>{provider.baseURL ?? baseURL}</Text>}
       {step === 'endpoint' && (
         <Box flexDirection='column'>
@@ -118,7 +151,8 @@ export function ProviderList({ busy }: ProviderListProps) {
           <Spinner type='dots' /> 正在查询模型并验证连接...
         </Text>
       )}
-      {busy && <Text color='yellow'>请等待当前对话结束后连接服务商。</Text>}
+      {removing && <Text color='cyan'><Spinner type='dots' /> 正在移除配置并切换服务商...</Text>}
+      {busy && <Text color='yellow'>请等待当前对话结束后连接或移除服务商。</Text>}
       {session.loadingConfig && <Text dimColor>正在读取本地配置...</Text>}
       {error && <Text color='red'>{error}</Text>}
     </Box>

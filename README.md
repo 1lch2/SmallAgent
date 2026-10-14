@@ -16,15 +16,17 @@ npm start
 
 中文输入有问题，终端不显示当前输入字符，只能凭感觉敲字。
 
-## 配置
+## 连接API
 
-所有配置都通过环境变量进行（在项目根目录的 `.env` 文件也可以）：
+当前支持 OpenAI Chat Completion 格式的 API 端点，可以通过内置命令 `/provider` 连接以下供应商或者自定义的API端点：
 
-| 变量               | 必需 | 说明                                                   |
-| ------------------ | ---- | ------------------------------------------------------ |
-| `OPENAI_BASE_URL`  | 是   | 任意 OpenAI Chat Completion 兼容端点                   |
-| `SMALLAGENT_MODEL` | 是   | 传递给聊天完成 API 的模型 ID。无默认值。               |
-| `OPENAI_API_KEY`   | 否   | 端点鉴权用的 key。本地服务等不需要鉴权的端点可以不设； |
+- DeepSeek
+- MiniMax（API 和 Token Plan）
+- 智谱GLM（API 和 Coding Plan）
+- 小米 MiMo（API 和 Token Plan）
+- Kimi（API 和 Coding Plan）
+- OpenAI（官方）
+- OpenAI Chat Completion 兼容端点
 
 ## 工具
 

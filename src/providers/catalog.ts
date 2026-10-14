@@ -23,5 +23,10 @@ export const providers: readonly ProviderDefinition[] = [
     baseURL: 'https://open.bigmodel.cn/api/coding/paas/v4',
     modelsDocument: 'https://docs.bigmodel.cn/cn/coding-plan/latest-model.md',
   },
+  { id: 'mimo-api', name: '小米 MiMo（API）', baseURL: 'https://api.xiaomimimo.com/v1' },
+  { id: 'mimo-token-plan', name: '小米 MiMo（Token Plan）', baseURL: 'https://token-plan-cn.xiaomimimo.com/v1' },
+  { id: 'kimi-api', name: 'Kimi（API）', baseURL: 'https://api.moonshot.cn/v1' },
+  { id: 'kimi-coding-plan', name: 'Kimi（Coding Plan）', baseURL: 'https://api.kimi.com/coding/v1' },
+  { id: 'openai', name: 'OpenAI（官方）', baseURL: 'https://api.openai.com/v1' },
   { id: 'openai-compatible', name: 'OpenAI Chat Completion兼容' },
 ];

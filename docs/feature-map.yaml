@@ -24,7 +24,7 @@ features:
     entrypoints: [src/openai-llm.ts, src/types.ts]
   - id: providers
     name: Provider 连接、模型选择、模型清单缓存与本地保存
-    keywords: [provider, ProviderList, ProviderSession, ModelList, List, model, 切换模型, 服务商, API Key, 模型列表, models, DeepSeek, MiniMax, GLM, Token Plan, Coding Plan, 自定义端点, 自动连接]
+    keywords: [provider, ProviderList, ProviderSession, ModelList, List, model, 切换模型, 删除供应商, 移除配置, 双按D, 服务商, API Key, 模型列表, models, DeepSeek, MiniMax, GLM, MiMo, 小米, Kimi, OpenAI官方, Token Plan, Coding Plan, 自定义端点, 自动连接]
     doc: docs/features/providers.md
     entrypoints: [src/providers/catalog.ts, src/providers/connect.ts, src/ui/ProviderList.tsx]
   - id: terminal-ui
