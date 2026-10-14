@@ -2,12 +2,12 @@
 
 [返回功能索引](../feature-map.yaml)
 
-覆盖状态：已核对入口、历史状态归属及模型与工具循环。最近核对：2026-10-13。未执行真实模型或工具回合验收。
+覆盖状态：已核对入口、历史状态归属及模型与工具循环。最近核对：2026-10-14。未执行真实模型或工具回合验收。
 
 ## 入口与关键实现
 
 - [src/core/agent.ts](../../src/core/agent.ts)：`Agent` 持有对话历史，`send` 追加用户消息并驱动循环，通过 `AgentUpdate` 回调推送回复、思考、工具事件、用量和错误。
-- [src/core/system-prompt.ts](../../src/core/system-prompt.ts)：`buildSystemPrompt` 在 Agent 初始化时注入工作目录、宿主本地日期和实际用于执行命令的 Shell 信息。
+- [src/core/prompt.ts](../../src/core/prompt.ts)：`buildSystemPrompt` 在 Agent 初始化时注入工作目录、宿主本地日期和实际用于执行命令的 Shell 信息，并依次读取用户主目录（`homedir()`）和工作目录根部的 `AGENTS.md`。每份内容按 `# AGENTS.md instructions for {目录}` 与独立的 `<INSTRUCTIONS>` 块包裹，追加到默认提示词末尾；两份文件都存在时，用前后各两个空行的 `--- project-doc ---` 分隔。缺失的文件跳过，其他读取错误继续抛出。内容在初始化时读取，不随文件修改自动刷新。
 - [src/tools/index.ts](../../src/tools/index.ts)：注册三个工具，导出模型可见的 `tools`，由 `executeTool` 按名称分派；未知工具和执行异常转换为结果文本。
 - [src/types.ts](../../src/types.ts)：定义模型无关的 `LLM`、消息和工具协议。
 - [src/utils/error.ts](../../src/utils/error.ts)：统一将错误转换为文本。

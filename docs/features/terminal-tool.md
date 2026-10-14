@@ -11,7 +11,7 @@
 - [src/utils/command-permission/powershell-paths.ts](../../src/utils/command-permission/powershell-paths.ts)：使用 PowerShell 原生 AST、静态参数绑定和常量读取识别路径，检查通配符匹配项、重定向及递归文件操作的子项。分析进程不执行传入命令。
 - [src/utils/command-permission/bash-paths.ts](../../src/utils/command-permission/bash-paths.ts)：`getBashPaths` 用受限词法分析拒绝动态语法，通过 Bash `-n` 校验语法，仅在固定辅助命令中展开已确认的静态词和通配符；按常用命令参数角色识别路径。`getBashEnvironment` 清理会改变启动行为的环境变量与导出函数，供分析和实际执行共用。
 - [src/utils/shell.ts](../../src/utils/shell.ts)：`getCurrentShellInfo` 在 Windows 优先选择 PowerShell 7，其次 Windows PowerShell，最后 CMD；非 Windows 优先已存在的 Bash，否则使用 `/bin/sh`。
-- [src/core/system-prompt.ts](../../src/core/system-prompt.ts)：根据同一 Shell 选择函数生成命令用法说明，提示词入口见[Agent 循环](agent-loop.md)。
+- [src/core/prompt.ts](../../src/core/prompt.ts)：根据同一 Shell 选择函数生成命令用法说明，提示词入口见[Agent 循环](agent-loop.md)。
 
 ## 调用链与权限边界
 

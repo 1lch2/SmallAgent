@@ -34,9 +34,21 @@ features:
   - id: agent-loop
     name: Agent 对话历史、工具循环与系统提示词
     keywords:
-      [Agent, send, ReAct, 对话, 上下文, 工具调用, AgentUpdate, 系统提示词, buildSystemPrompt]
+      [
+        Agent,
+        send,
+        ReAct,
+        对话,
+        上下文,
+        工具调用,
+        AgentUpdate,
+        系统提示词,
+        buildSystemPrompt,
+        AGENTS.md,
+        全局指令,
+      ]
     doc: docs/features/agent-loop.md
-    entrypoints: [src/core/agent.ts, src/core/system-prompt.ts]
+    entrypoints: [src/core/agent.ts, src/core/prompt.ts]
   - id: model-adapter
     name: OpenAI 兼容模型接口与 Token 用量
     keywords:

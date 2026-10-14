@@ -35,7 +35,7 @@ import type { AssistantMessage, LLM, Message, TokenUsage } from '../types';
 import { executeTool, tools } from '../tools';
 import { errorMessage } from '../utils/error';
 import { splitAssistantText } from '../utils/assistant-text';
-import { buildSystemPrompt } from './system-prompt';
+import { buildSystemPrompt } from './prompt';
 
 /** 初始化 Agent 所需的模型与工作目录。 */
 export interface AgentOptions {
