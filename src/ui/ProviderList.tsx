@@ -2,9 +2,8 @@ import { useState } from 'react';
 import { Box, Text, useInput } from 'ink';
 import TextInput from 'ink-text-input';
 import Spinner from 'ink-spinner';
-import { providers } from '../providers/catalog';
+import { normalizeBaseURL, providers } from '../core/provider';
 import { useProviderSession } from '../hook/useProviderSession';
-import { normalizeBaseURL } from '../providers/connect';
 import { List } from './List';
 
 /** 服务商页面是否需要等待当前对话结束。 */

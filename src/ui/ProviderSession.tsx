@@ -1,19 +1,17 @@
 import { createContext, useCallback, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Agent } from '../core/agent';
-import { loadSettings, saveSettings } from '../core/settings';
-import type { PermissionMode, Settings } from '../core/settings';
-import type { ProviderDefinition } from '../providers/catalog';
-import { providers } from '../providers/catalog';
-import { connectProvider, fetchModelCatalog } from '../providers/connect';
-import type { ProviderConnection } from '../providers/connect';
+import { connectProvider, fetchModelCatalog, providers } from '../core/provider';
+import type { ProviderConnection, ProviderDefinition } from '../core/provider';
 import {
   loadModelCatalog,
-  providerStoragePaths,
+  loadSettings,
+  storagePaths as defaultStoragePaths,
   saveModelCatalog,
   saveProviderConnection,
-} from '../providers/storage';
-import type { ModelCatalog, ProviderStoragePaths } from '../providers/storage';
+  saveSettings,
+} from '../core/settings';
+import type { ModelCatalog, PermissionMode, Settings, StoragePaths } from '../core/settings';
 import { OpenAILLM } from '../openai-llm';
 
 /** 连接、选项和页面状态的共享边界。 */
@@ -44,16 +42,19 @@ export const ProviderSessionContext = createContext<ProviderSessionState | undef
 /** 服务商会话容器的子组件与存储位置。 */
 export interface ProviderSessionProps {
   children: ReactNode;
-  storagePaths?: ProviderStoragePaths;
+  storagePaths?: StoragePaths;
 }
 
 /** 管理连接和页面状态，启动时只读取本地选项并初始化模型。 */
 export function ProviderSession({
   children,
-  storagePaths = providerStoragePaths,
+  storagePaths = defaultStoragePaths,
 }: ProviderSessionProps) {
   const [connection, setConnection] = useState<ProviderConnection>();
-  const [settings, setSettings] = useState<Settings>({ connections: [], permission: 'workspace' });
+  const [settings, setSettings] = useState<Settings>({
+    connections: [],
+    permission: 'workspace-write',
+  });
   const [view, setView] = useState<ProviderSessionState['view']>('chat');
   const [loadingConfig, setLoadingConfig] = useState(true);
   const [error, setError] = useState<string>();
@@ -101,7 +102,13 @@ export function ProviderSession({
   }, [storagePaths]);
 
   async function connect(provider: ProviderDefinition, apiKey: string, baseURL?: string) {
-    const next = await connectProvider(provider, apiKey, baseURL, storagePaths);
+    const next = await connectProvider(provider, apiKey, baseURL);
+    try {
+      await saveModelCatalog(next.options, next.catalog!, storagePaths);
+      await saveProviderConnection(next.options, storagePaths);
+    } catch {
+      throw new Error('连接验证成功，但本地配置或模型缓存保存失败。');
+    }
     activate(next);
     setSettings(previous => ({
       ...previous,

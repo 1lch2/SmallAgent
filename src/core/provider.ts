@@ -1,9 +1,47 @@
 import OpenAI from 'openai';
 import { OpenAILLM } from '../openai-llm';
-import type { ProviderDefinition } from './catalog';
-import { saveModelCatalog, saveProviderConnection, providerStoragePaths } from './storage';
-import type { ModelCatalog, ProviderStoragePaths } from './storage';
-import type { SavedConnection } from '../core/settings';
+import type { ModelCatalog, SavedConnection } from './settings';
+
+/** 内置服务商的端点与模型列表备用来源。 */
+export interface ProviderDefinition {
+  id: string;
+  name: string;
+  baseURL?: string;
+  modelsDocument?: string;
+}
+
+/** 按官方文档注册的 OpenAI Chat Completions 兼容服务商。 */
+export const providers: readonly ProviderDefinition[] = [
+  { id: 'deepseek', name: 'DeepSeek', baseURL: 'https://api.deepseek.com' },
+  { id: 'minimax-api', name: 'MiniMax（API）', baseURL: 'https://api.minimax.cn/v1' },
+  { id: 'minimax-token-plan', name: 'MiniMax（Token Plan）', baseURL: 'https://api.minimax.cn/v1' },
+  {
+    id: 'glm-api',
+    name: '智谱GLM（API）',
+    baseURL: 'https://open.bigmodel.cn/api/paas/v4',
+    modelsDocument: 'https://docs.bigmodel.cn/cn/guide/start/model-overview.md',
+  },
+  {
+    id: 'glm-token-plan',
+    name: '智谱GLM（Coding Plan）',
+    baseURL: 'https://open.bigmodel.cn/api/coding/paas/v4',
+    modelsDocument: 'https://docs.bigmodel.cn/cn/coding-plan/latest-model.md',
+  },
+  { id: 'mimo-api', name: '小米 MiMo（API）', baseURL: 'https://api.xiaomimimo.com/v1' },
+  {
+    id: 'mimo-token-plan',
+    name: '小米 MiMo（Token Plan）',
+    baseURL: 'https://token-plan-cn.xiaomimimo.com/v1',
+  },
+  { id: 'kimi-api', name: 'Kimi（API）', baseURL: 'https://api.moonshot.cn/v1' },
+  {
+    id: 'kimi-coding-plan',
+    name: 'Kimi（Coding Plan）',
+    baseURL: 'https://api.kimi.com/coding/v1',
+  },
+  { id: 'openai', name: 'OpenAI（官方）', baseURL: 'https://api.openai.com/v1' },
+  { id: 'openai-compatible', name: 'OpenAI Chat Completion兼容' },
+];
 
 /** 本地选项初始化或联网校验后创建的模型连接。 */
 export interface ProviderConnection {
@@ -93,12 +131,11 @@ export async function fetchModelCatalog(
   return { models, source, updatedAt: new Date().toISOString() };
 }
 
-/** 查询并缓存模型列表，验证首个模型可调用后保存连接选项。 */
+/** 查询模型列表并验证首个模型，返回连接供会话层保存和激活。 */
 export async function connectProvider(
   provider: ProviderDefinition,
   apiKey: string,
-  baseURL = provider.baseURL ?? '',
-  paths: ProviderStoragePaths = providerStoragePaths
+  baseURL = provider.baseURL ?? ''
 ): Promise<ProviderConnection> {
   const key = apiKey.trim();
   const endpoint = normalizeBaseURL(provider.baseURL ?? baseURL);
@@ -122,11 +159,5 @@ export async function connectProvider(
     model,
     apiKey: key,
   };
-  try {
-    await saveModelCatalog(options, catalog, paths);
-    await saveProviderConnection(options, paths);
-  } catch {
-    throw new Error('连接验证成功，但本地配置或模型缓存保存失败。');
-  }
   return { options, catalog, llm: new OpenAILLM({ apiKey: key, baseURL: endpoint, model }) };
 }

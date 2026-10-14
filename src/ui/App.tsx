@@ -97,19 +97,17 @@ export function App() {
   return (
     // 为 Ink 重绘后的换行保留一行；仅设置最小高度，让长消息自然延伸。
     <Box flexDirection="column" paddingX={1} minHeight={Math.max(0, terminalRows - 1)}>
-      {!entries.some(entry => entry.type === 'user') && (
-        <Box flexDirection="column" flexShrink={0} paddingLeft={1}>
-          <Text wrap="truncate-end">
-            <Text bold>{'>_ Liberi Code'}</Text>
-            <Text dimColor>{` (v${version})`}</Text>
+      <Box flexDirection="column" flexShrink={0} paddingLeft={1}>
+        <Text wrap="truncate-end">
+          <Text bold>{'>_ Liberi Code'}</Text>
+          <Text dimColor>{` (v${version})`}</Text>
+        </Text>
+        <Box paddingLeft={3}>
+          <Text dimColor wrap="truncate-end">
+            {process.cwd()}
           </Text>
-          <Box paddingLeft={3}>
-            <Text dimColor wrap="truncate-end">
-              {process.cwd()}
-            </Text>
-          </Box>
         </Box>
-      )}
+      </Box>
       <Box flexDirection="column" flexGrow={1} flexShrink={0} marginBottom={1}>
         {entries.map((entry, i) => (
           <Box key={i} flexDirection="column" marginBottom={1}>

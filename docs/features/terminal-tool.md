@@ -17,7 +17,7 @@
 
 `executeTool` → `terminalRun` → `checkTerminalCommandPermission` → `getPowerShellPaths` / `getBashPaths` → `execFile` / `exec`。工具注册及异常转换由[公共分派器](agent-loop.md)负责。
 
-上述路径检查用于默认的 `workspace` 权限模式；`full-access` 跳过 `checkTerminalCommandPermission`，沿用同一命令执行入口和 Shell 启动选项。配置入口见[设置配置](settings.md)。本次通过 Agent 工具循环验证了 PowerShell 目录外读取在工作区模式下拒绝、完全许可模式下执行成功；新增模式未单独执行其他 Shell 验收。
+上述路径检查用于默认的 `workspace-write` 权限模式；`full-access` 跳过 `checkTerminalCommandPermission`，沿用同一命令执行入口和 Shell 启动选项。配置入口见[设置配置](settings.md)。本次通过 Agent 工具循环验证了 PowerShell 目录外读取在工作区模式下拒绝、完全许可模式下执行成功；新增模式未单独执行其他 Shell 验收。
 
 PowerShell 支持常量路径、参数缩写及冒号形式、路径数组、通配符、重定向、常见读写和遍历 Cmdlet。字符串内容参数不按路径处理。变量路径、动态表达式、隐式管道路径、赋值、切换目录、动态命令名、方法调用及嵌套 Shell 等不能可靠静态确认的形式被拒绝；这也会拒绝部分合法的动态命令，应改写成直接的路径参数。解析和执行均不加载 profile，执行输出使用 UTF-8。
 

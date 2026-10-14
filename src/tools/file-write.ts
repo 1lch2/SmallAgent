@@ -8,10 +8,10 @@ import type { PermissionMode } from '../core/settings';
 export async function fileWrite(
   args: Record<string, unknown>,
   cwd: string,
-  permission: PermissionMode = 'workspace'
+  permission: PermissionMode = 'workspace-write'
 ): Promise<string> {
   const target = resolvePath(String(args.path), cwd);
-  if (permission === 'workspace' && !(await usePathValidation(target))) {
+  if (permission === 'workspace-write' && !(await usePathValidation(target))) {
     throw new Error(`权限不足：禁止写入工作目录以外的路径（${target}）。`);
   }
   await fs.writeFile(target, String(args.content), 'utf-8');

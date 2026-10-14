@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Box, Text, useInput } from 'ink';
 import Spinner from 'ink-spinner';
 import { useProviderSession } from '../hook/useProviderSession';
-import { providers } from '../providers/catalog';
+import { providers } from '../core/provider';
 import { List } from './List';
 
 /** 模型选择页面的忙碌状态与设置目标。 */

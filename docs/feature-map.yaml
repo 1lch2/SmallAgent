@@ -97,7 +97,7 @@ features:
         自动连接,
       ]
     doc: docs/features/providers.md
-    entrypoints: [src/providers/catalog.ts, src/providers/connect.ts, src/ui/ProviderList.tsx]
+    entrypoints: [src/core/provider.ts, src/core/settings.ts, src/ui/ProviderList.tsx]
   - id: settings
     name: Agent 设置、权限模式、统一配置文件与 subagent 模型占位
     keywords:
@@ -109,13 +109,14 @@ features:
         subagent model,
         subagentModel,
         permission,
+        workspace-write,
         工作区写入,
         完全许可,
         设置,
         全局配置,
       ]
     doc: docs/features/settings.md
-    entrypoints: [src/core/settings.ts, src/ui/ConfigList.tsx, src/ui/List.tsx]
+    entrypoints: [src/core/settings.ts, src/ui/ConfigList.tsx, src/ui/PermissionList.tsx]
   - id: terminal-ui
     name: 终端输入、消息展示与布局
     keywords:

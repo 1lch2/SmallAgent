@@ -6,17 +6,15 @@
 
 ## 入口与关键实现
 
-- [src/providers/catalog.ts](../../src/providers/catalog.ts)：`providers` 注册内置服务商及自定义选项，包含 MiMo API／Token Plan、Kimi API／Coding Plan 和 OpenAI 官方；均使用 OpenAI Chat Completions 格式，自定义项不预设端点。API 与套餐使用独立 ID 保存配置及凭据。
+- [src/core/provider.ts](../../src/core/provider.ts)：统一供应商清单与连接实现。`providers` 注册内置服务商及自定义选项，API 与套餐使用独立 ID。`fetchModelCatalog` 使用 SDK `models.list()` 或既有官方文档备用流程获取模型；`connectProvider` 获取清单、选首个模型并发送最小 Chat Completions 请求校验，返回连接供会话层保存和激活，本文件不读写本地配置。
 - [src/hook/useCommands.ts](../../src/hook/useCommands.ts)：应用命令列表注册 `/provider` 和 `/model`，将会话的 `openProviders`、`openModels` 绑定为执行回调；`App` 将列表传给输入组件，由 [src/core/commands.ts](../../src/core/commands.ts) 通用分发器匹配执行。
-- [src/ui/ProviderSession.tsx](../../src/ui/ProviderSession.tsx)：`ProviderSession` 管理连接、选项和页面状态；启动只读取用户目录配置，使用已保存端点、模型和 API Key 初始化适配器，不请求接口、不读取或刷新模型缓存、不改写配置。缺少已选连接时保持未连接状态。
+- [src/ui/ProviderSession.tsx](../../src/ui/ProviderSession.tsx)：`ProviderSession` 管理连接、选项和页面状态；主动连接时调用 `connectProvider` 校验，依次保存模型缓存与连接后再激活。启动只读取用户目录配置，使用已保存端点、模型和 API Key 初始化适配器，不请求接口、不读取或刷新模型缓存、不改写配置。缺少已选连接时保持未连接状态。
 - [src/hook/useProviderSession.ts](../../src/hook/useProviderSession.ts)：`useProviderSession` 提供共享状态读取入口，Hook 与 UI 组件分别归属 `src/hook` 和 `src/ui`。
 - [src/ui/ProviderList.tsx](../../src/ui/ProviderList.tsx)：上下键选择服务商，回车展开输入；列表状态双按 D 删除选中项的已保存配置，区分已连接与已配置项。内置项输入 API Key；自定义项先输入基础地址，再输入 API Key。Key 使用掩码显示，连接失败保留页面供重试，Esc 返回列表或聊天。
-- [src/ui/List.tsx](../../src/ui/List.tsx)：Provider 和模型页面共用的受控列表；接收标识、显示文本、选中位置及回调，负责上下键循环导航和回车确认，不依赖服务商会话。
-- [src/ui/ModelList.tsx](../../src/ui/ModelList.tsx)：读取当前 Provider 的模型清单，默认定位并标记当前模型；确认保存后返回聊天，Esc 取消。加载或保存时禁用选择，当前对话结束前禁止切换；卸载后忽略未完成的清单读取结果。
-- [src/providers/connect.ts](../../src/providers/connect.ts)：`fetchModelCatalog` 使用 SDK `models.list()` 或既有官方文档备用流程获取模型。主动通过 `/provider` 连接时，`connectProvider` 获取清单、选首个模型并发送最小 Chat Completions 请求校验，成功后保存；启动不调用这一流程。
-- [src/providers/storage.ts](../../src/providers/storage.ts)：保存连接和临时模型清单；连接保存读取统一设置并保留其他 Agent 设置。模型缓存与统一配置通过 `writeJSON` 写临时文件后重命名。
-- [src/core/settings.ts](../../src/core/settings.ts)：`loadSettings`、`saveSettings` 读写统一配置，连接保存与配置删除共用该入口。文件以 `0600` 模式创建；Windows 文件访问受当前用户目录的 ACL 控制。Agent 设置见[设置配置](settings.md)。
-- [src/ui/App.tsx](../../src/ui/App.tsx)：根据会话展示聊天、`ProviderList` 或 `ModelList`；未连接时禁止发送模型请求，当前回合结束后才能切换连接或模型。切换使用 `Agent.setLLM` 保留历史，重置用量统计。
+- [src/ui/List.tsx](../../src/ui/List.tsx)：Provider、模型和设置页面共用的受控列表，支持标签、可选说明和当前值，负责上下键循环导航与回车确认；布局见[设置配置](settings.md)。
+- [src/ui/ModelList.tsx](../../src/ui/ModelList.tsx)：读取当前 Provider 的模型清单；默认编辑聊天模型，`target="subagent"` 编辑 subagent 模型设置，并按对应已选模型定位。保存或取消后分别返回聊天或设置页；加载或保存时禁用选择，当前对话结束前禁止确认；卸载后忽略未完成的清单读取结果。
+- [src/core/settings.ts](../../src/core/settings.ts)：全局配置管理入口，统一设置、连接保存和临时模型缓存；`loadSettings`、`saveSettings` 读写配置，`saveProviderConnection` 保留其他 Agent 设置。内部 `writeJSON` 通过临时文件重命名原子写入，以 `0600` 模式创建文件；Windows 文件访问受当前用户目录的 ACL 控制。Agent 设置见[设置配置](settings.md)。
+- [src/ui/App.tsx](../../src/ui/App.tsx)：根据会话展示聊天、Provider、模型或设置相关选择页；未连接时禁止发送模型请求，当前回合结束后才能切换连接或模型。切换使用 `Agent.setLLM` 保留历史，重置用量统计。
 
 ## 删除供应商配置
 

@@ -14,7 +14,7 @@
 
 ## 调用链与权限边界
 
-`executeTool` → `fileRead` / `fileWrite` → `resolvePath` → 工作区模式下 `usePathValidation` → `fs.readFile` / `fs.writeFile`。`permission` 默认 `workspace`；`full-access` 跳过路径检查，仍使用同样的路径解析与文件读写，实际访问受操作系统权限限制。配置入口见[设置配置](settings.md)。
+`executeTool` → `fileRead` / `fileWrite` → `resolvePath` → 工作区模式下 `usePathValidation` → `fs.readFile` / `fs.writeFile`。`permission` 默认 `workspace-write`；`full-access` 跳过路径检查，仍使用同样的路径解析与文件读写，实际访问受操作系统权限限制。配置入口见[设置配置](settings.md)。
 
 已存在路径通过 `realpath` 检查真实目标是否在根内；目标不存在时检查其父目录真实路径，目标存在但无法解析的情况拒绝访问。权限失败通过异常交给分派器转换为模型可见文本。
 

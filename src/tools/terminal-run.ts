@@ -13,11 +13,14 @@ const execFileAsync = promisify(execFile);
 export async function terminalRun(
   args: Record<string, unknown>,
   cwd: string,
-  permission: PermissionMode = 'workspace'
+  permission: PermissionMode = 'workspace-write'
 ): Promise<string> {
   const command = String(args.command);
   const shell = getCurrentShellInfo();
-  if (permission === 'workspace' && !(await checkTerminalCommandPermission(command, cwd, shell))) {
+  if (
+    permission === 'workspace-write' &&
+    !(await checkTerminalCommandPermission(command, cwd, shell))
+  ) {
     throw new Error(
       '权限不足：命令含有超出工作目录的路径，或无法静态确认路径的 Shell 语法。请使用直接的路径参数，避免动态路径和切换目录。'
     );
@@ -56,7 +59,7 @@ export const terminalRunTool = {
   definition: {
     name: 'terminal_run',
     description:
-      'Run a shell command from the working directory. In workspace mode, PowerShell and Bash validate paths and reject dynamic paths, assignments, directory changes and nested shells; CMD and sh skip this check. Full-access mode skips path validation. Returns combined stdout and stderr.',
+      'Run a shell command from the working directory. In workspace-write mode, PowerShell and Bash validate paths and reject dynamic paths, assignments, directory changes and nested shells; CMD and sh skip this check. Full-access mode skips path validation. Returns combined stdout and stderr.',
     parameters: {
       type: 'object',
       properties: {

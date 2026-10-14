@@ -71,7 +71,7 @@ export class Agent {
   constructor(opts: AgentOptions) {
     this.llm = opts.llm;
     this.cwd = opts.cwd;
-    this.permission = opts.permission ?? 'workspace';
+    this.permission = opts.permission ?? 'workspace-write';
     this.history.push({
       role: 'system',
       content: buildSystemPrompt(this.cwd, this.permission),

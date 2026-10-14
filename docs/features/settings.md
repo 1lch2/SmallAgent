@@ -8,11 +8,11 @@
 
 - [src/hook/useCommands.ts](../../src/hook/useCommands.ts)：注册 `/config`，执行会话的 `openConfig`。
 - [src/ui/ConfigList.tsx](../../src/ui/ConfigList.tsx)：通过通用 List 展示 `subagent model` 和 `permission`、灰色说明与当前值；回车打开对应选择页，Esc 返回聊天。
-- [src/ui/PermissionList.tsx](../../src/ui/PermissionList.tsx)：展示“工作区写入”和“完全许可”，默认选中当前模式；回车保存并返回设置页，Esc 取消，对话忙碌时禁止确认切换。
+- [src/ui/PermissionList.tsx](../../src/ui/PermissionList.tsx)：展示“工作区写入”和“完全许可”，默认选中当前模式；回车保存并返回设置页，Esc 取消，对话忙碌时禁止确认切换。显示名称由 `permissionLabels` 提供，对应持久化值为 `workspace-write` / `full-access`。
 - [src/ui/List.tsx](../../src/ui/List.tsx)：`ListItem` 提供 `label`、可选 `comment` 与 `value`。标签与灰色说明靠左，中间保留一个空格；值靠列表右侧对齐并保留右侧留白。含值的列表宽度上限为 100 列，并随父容器缩小，避免在宽终端中将值推至终端最右侧；没有值时沿用父容器宽度。
 - [src/ui/ModelList.tsx](../../src/ui/ModelList.tsx)：`target="subagent"` 复用当前 Provider 的模型清单，并按已保存的 subagent 模型定位；回车保存后返回设置页，Esc 取消并返回设置页。没有连接时提示先使用 `/provider`。
 - [src/ui/ProviderSession.tsx](../../src/ui/ProviderSession.tsx)：维护设置、页面和连接；`selectSubagentModel` 保存模型，不切换当前聊天模型或创建 subagent；`selectPermission` 保存权限模式后调用 `Agent.setPermission`，启动时也向 Agent 传入保存的模式。
-- [src/core/settings.ts](../../src/core/settings.ts)：`Settings` 保存 Provider 连接、当前 Provider、可选 `subagentModel` 和 `permission`；缺少权限字段时默认为 `workspace`，另一有效值为 `full-access`。`loadSettings` 和 `saveSettings` 统一读写 `~/.liberi/settings.json`，`writeJSON` 供配置及模型缓存共用原子 JSON 写入。
+- [src/core/settings.ts](../../src/core/settings.ts)：全局配置管理入口，统一 Agent 设置、Provider 连接保存和模型缓存。`Settings` 保存当前 Provider、连接、可选 `subagentModel` 和 `permission`；缺少权限字段时默认为 `workspace-write`，另一有效值为 `full-access`。`loadSettings` 和 `saveSettings` 统一读写 `~/.liberi/settings.json`，内部 `writeJSON` 供配置及模型缓存共用原子 JSON 写入，`StoragePaths` 与 `storagePaths` 定义统一存储位置。
 
 ## 保存与行为边界
 
@@ -20,7 +20,7 @@
 
 Provider 保存连接、切换聊天模型或删除连接时保留 `subagentModel`；设置 subagent 模型时保留已有 Provider 配置。`subagentModel` 仅保存模型名称，当前使用已连接 Provider 的清单，不包含独立 subagent Provider 配置或运行能力。
 
-`permission` 的说明为“agent权限审批模式”。“工作区写入”保留现有文件真实路径与 Shell 命令路径检查；“完全许可”跳过这些工作区限制，但文件操作和命令执行仍受当前操作系统权限约束。没有新增逐次交互审批流程。模式保存保留 Provider 和 subagent 设置，切换不重置 Agent 历史或 Token 用量。工具执行边界见[文件读写](file-tools.md)与[命令执行](terminal-tool.md)。
+`permission` 的说明为“agent权限审批模式”。“工作区写入”保留现有文件真实路径与 Shell 命令路径检查；“完全许可”跳过这些工作区限制，但文件操作和命令执行仍受当前操作系统权限约束。没有新增逐次交互审批流程。模式保存保留 Provider 和 subagent 设置，切换不重置 Agent 历史或 Token 用量。工具执行边界见[文件读写](file-tools.md)与[命令执行](terminal-tool.md)。读取旧值 `workspace` 时转换为 `workspace-write`，后续保存使用新 key，启动不改写文件。
 
 模型清单来源和缓存边界见 [Provider](providers.md)。聊天回合进行中仍可打开设置页，但模型选择页沿用等待当前回合结束后确认的规则。
 

@@ -8,7 +8,7 @@
 
 - [src/openai-llm.ts](../../src/openai-llm.ts)：`OpenAILLM` 实现 `LLM`；`toOpenAIMessage` 转换内部消息，`complete` 调用 `client.chat.completions.create`，转换首个响应 choice 的正文和工具调用。
 - [src/types.ts](../../src/types.ts)：`CompletionRequest`、`AssistantMessage`、`ToolCall` 和 `LLM` 定义 Agent 与适配器之间的边界，不依赖 SDK 类型。
-- [src/providers/connect.ts](../../src/providers/connect.ts)：按内置服务商或自定义端点查询模型列表、校验连接后创建适配器，配置入口见[Provider](providers.md)。启动不再读取模型环境变量。
+- [src/core/provider.ts](../../src/core/provider.ts)：按内置服务商或自定义端点查询模型列表、校验连接后创建适配器，配置入口见[Provider](providers.md)。启动不再读取模型环境变量。
 - [src/ui/ProviderSession.tsx](../../src/ui/ProviderSession.tsx)：启动时只读取本地已选连接，直接使用保存的端点、模型和 Key 创建适配器，不调用连接校验流程。
 
 ## 调用链与状态边界

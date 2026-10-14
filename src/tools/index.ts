@@ -30,7 +30,7 @@ export async function executeTool(
   name: string,
   args: Record<string, unknown>,
   cwd: string,
-  permission: PermissionMode = 'workspace'
+  permission: PermissionMode = 'workspace-write'
 ): Promise<string> {
   const tool = toolRegistry.get(name);
   if (!tool) return `Unknown tool: ${name}`;

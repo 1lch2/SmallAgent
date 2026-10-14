@@ -14,7 +14,7 @@ export interface PermissionListProps {
 export function PermissionList({ busy }: PermissionListProps) {
   const session = useProviderSession();
   const [selectedIndex, setSelectedIndex] = useState(
-    session.settings.permission === 'workspace' ? 0 : 1
+    session.settings.permission === 'workspace-write' ? 0 : 1
   );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string>();
@@ -43,7 +43,7 @@ export function PermissionList({ busy }: PermissionListProps) {
       <Text dimColor>↑↓ 选择 · Enter 保存 · Esc 返回</Text>
       <List
         items={[
-          { id: 'workspace', label: permissionLabels.workspace },
+          { id: 'workspace-write', label: permissionLabels['workspace-write'] },
           { id: 'full-access', label: permissionLabels['full-access'] },
         ]}
         selectedIndex={selectedIndex}

@@ -21,7 +21,7 @@ const SYSTEM_PROMPT = `You are a terminal agent named Liberi Code, developed by 
 
 <tools>
   Use tools to read files, write files, and run shell commands.
-  <file_access>In workspace mode, only access files inside the working directory. In full-access mode, workspace path restrictions are disabled.</file_access>
+  <file_access>In workspace-write mode, only access files inside the working directory. In full-access mode, workspace path restrictions are disabled.</file_access>
   <shell_usage>
 {shellUsage}
   </shell_usage>
@@ -56,7 +56,10 @@ function readInstructions(directory: string): string {
 }
 
 /** 构建默认系统提示词，并依次追加用户主目录和工作目录中的 AGENTS.md 指令。 */
-export function buildSystemPrompt(cwd: string, permission: PermissionMode = 'workspace'): string {
+export function buildSystemPrompt(
+  cwd: string,
+  permission: PermissionMode = 'workspace-write'
+): string {
   const shell = getCurrentShellInfo();
   const prompt = SYSTEM_PROMPT.replace('{cwd}', cwd)
     .replace('{currentDate}', getCurrentDate())
