@@ -48,7 +48,13 @@ export type AgentUpdate =
   | { kind: 'assistant_text_thinking'; text: string }
   | { kind: 'assistant_text_response'; text: string }
   | { kind: 'tool_call'; name: string; args: unknown; callId: string }
-  | { kind: 'tool_result'; callId: string; name: string; args: Record<string, unknown>; output: string }
+  | {
+      kind: 'tool_result';
+      callId: string;
+      name: string;
+      args: Record<string, unknown>;
+      output: string;
+    }
   | { kind: 'token_usage'; usage: TokenUsage }
   | { kind: 'error'; message: string };
 
@@ -84,7 +90,7 @@ export class Agent {
         msg = await this.llm.complete({
           messages: this.history,
           tools,
-          onTokenUsage: (usage) => onUpdate({ kind: 'token_usage', usage }),
+          onTokenUsage: usage => onUpdate({ kind: 'token_usage', usage }),
         });
       } catch (err) {
         // API 错误转为事件，不抛——本轮中止，但 Agent 实例保持可用，

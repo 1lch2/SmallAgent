@@ -20,7 +20,7 @@ function toOpenAIMessage(message: Message): ChatCompletionMessageParam {
       content: message.content,
       ...(message.toolCalls?.length
         ? {
-            tool_calls: message.toolCalls.map((call) => ({
+            tool_calls: message.toolCalls.map(call => ({
               id: call.id,
               type: 'function' as const,
               function: { name: call.name, arguments: call.arguments },
@@ -46,20 +46,23 @@ export class OpenAILLM implements LLM {
 
   /** 请求模型并将响应转换为 Agent 使用的消息格式。 */
   async complete(request: CompletionRequest): Promise<AssistantMessage> {
-    const response = await this.client.chat.completions.create({
-      model: this.model,
-      messages: request.messages.map(toOpenAIMessage),
-      tools: request.tools.map((tool) => ({ type: 'function', function: tool })),
-    }).catch((error: unknown) => {
-      const message = errorMessage(error);
-      // 服务端可能在错误正文中回显凭据，避免将密钥传入界面。
-      throw new Error(message.replaceAll(this.client.apiKey, '[已隐藏]'));
-    });
+    const response = await this.client.chat.completions
+      .create({
+        model: this.model,
+        messages: request.messages.map(toOpenAIMessage),
+        tools: request.tools.map(tool => ({ type: 'function', function: tool })),
+      })
+      .catch((error: unknown) => {
+        const message = errorMessage(error);
+        // 服务端可能在错误正文中回显凭据，避免将密钥传入界面。
+        throw new Error(message.replaceAll(this.client.apiKey, '[已隐藏]'));
+      });
     if (response.usage) {
       this.tokenUsage = {
         totalTokens: this.tokenUsage.totalTokens + response.usage.total_tokens,
         promptTokens: this.tokenUsage.promptTokens + response.usage.prompt_tokens,
-        cachedTokens: this.tokenUsage.cachedTokens + (response.usage.prompt_tokens_details?.cached_tokens ?? 0),
+        cachedTokens:
+          this.tokenUsage.cachedTokens + (response.usage.prompt_tokens_details?.cached_tokens ?? 0),
       };
       request.onTokenUsage?.(this.tokenUsage);
     }
@@ -72,7 +75,7 @@ export class OpenAILLM implements LLM {
       content: message.content ?? '',
       ...(message.tool_calls?.length
         ? {
-            toolCalls: message.tool_calls.map((call) => ({
+            toolCalls: message.tool_calls.map(call => ({
               id: call.id,
               name: call.function.name,
               arguments: call.function.arguments,

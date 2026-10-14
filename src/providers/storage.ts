@@ -40,12 +40,17 @@ export const providerStoragePaths: ProviderStoragePaths = {
 async function writeJSON(file: string, data: unknown) {
   await mkdir(dirname(file), { recursive: true });
   const temporary = `${file}.${randomUUID()}.tmp`;
-  await writeFile(temporary, `${JSON.stringify(data, null, 2)}\n`, { encoding: 'utf8', mode: 0o600 });
+  await writeFile(temporary, `${JSON.stringify(data, null, 2)}\n`, {
+    encoding: 'utf8',
+    mode: 0o600,
+  });
   await rename(temporary, file);
 }
 
 /** 读取保存的连接；首次启动没有配置时返回空清单。 */
-export async function loadProviderSettings(paths = providerStoragePaths): Promise<ProviderSettings> {
+export async function loadProviderSettings(
+  paths = providerStoragePaths
+): Promise<ProviderSettings> {
   let text: string;
   try {
     text = await readFile(paths.configFile, 'utf8');
@@ -55,9 +60,21 @@ export async function loadProviderSettings(paths = providerStoragePaths): Promis
   }
   try {
     const data = JSON.parse(text) as ProviderSettings;
-    if (!Array.isArray(data.connections) || (data.selectedProviderId !== undefined && typeof data.selectedProviderId !== 'string')) throw new Error();
-    if (!data.connections.every((item) => providers.some((provider) => provider.id === item.providerId)
-      && typeof item.baseURL === 'string' && typeof item.model === 'string' && typeof item.apiKey === 'string')) throw new Error();
+    if (
+      !Array.isArray(data.connections) ||
+      (data.selectedProviderId !== undefined && typeof data.selectedProviderId !== 'string')
+    )
+      throw new Error();
+    if (
+      !data.connections.every(
+        item =>
+          providers.some(provider => provider.id === item.providerId) &&
+          typeof item.baseURL === 'string' &&
+          typeof item.model === 'string' &&
+          typeof item.apiKey === 'string'
+      )
+    )
+      throw new Error();
     return data;
   } catch {
     throw new Error('本地 provider 配置格式无效。');
@@ -65,35 +82,70 @@ export async function loadProviderSettings(paths = providerStoragePaths): Promis
 }
 
 /** 原子保存完整服务商配置及当前选择。 */
-export async function saveProviderSettings(settings: ProviderSettings, paths = providerStoragePaths): Promise<void> {
+export async function saveProviderSettings(
+  settings: ProviderSettings,
+  paths = providerStoragePaths
+): Promise<void> {
   await writeJSON(paths.configFile, settings);
 }
 
 /** 保存连接选项并选中该服务商，不覆盖其他服务商的选项。 */
-export async function saveProviderConnection(connection: SavedConnection, paths = providerStoragePaths): Promise<void> {
+export async function saveProviderConnection(
+  connection: SavedConnection,
+  paths = providerStoragePaths
+): Promise<void> {
   const settings = await loadProviderSettings(paths);
-  await saveProviderSettings({
-    selectedProviderId: connection.providerId,
-    connections: [...settings.connections.filter((item) => item.providerId !== connection.providerId), connection],
-  }, paths);
+  await saveProviderSettings(
+    {
+      selectedProviderId: connection.providerId,
+      connections: [
+        ...settings.connections.filter(item => item.providerId !== connection.providerId),
+        connection,
+      ],
+    },
+    paths
+  );
 }
 
-function modelCacheFile(connection: Pick<SavedConnection, 'providerId' | 'baseURL' | 'apiKey'>, paths: ProviderStoragePaths) {
-  const id = createHash('sha256').update(`${connection.providerId}\n${connection.baseURL}\n${connection.apiKey}`).digest('hex');
+function modelCacheFile(
+  connection: Pick<SavedConnection, 'providerId' | 'baseURL' | 'apiKey'>,
+  paths: ProviderStoragePaths
+) {
+  const id = createHash('sha256')
+    .update(`${connection.providerId}\n${connection.baseURL}\n${connection.apiKey}`)
+    .digest('hex');
   return join(paths.cacheDirectory, `${id}.json`);
 }
 
 /** 更新当前连接的模型清单缓存；缓存不保存 API Key。 */
-export async function saveModelCatalog(connection: SavedConnection, catalog: ModelCatalog, paths = providerStoragePaths): Promise<void> {
-  await writeJSON(modelCacheFile(connection, paths), { providerId: connection.providerId, baseURL: connection.baseURL, ...catalog });
+export async function saveModelCatalog(
+  connection: SavedConnection,
+  catalog: ModelCatalog,
+  paths = providerStoragePaths
+): Promise<void> {
+  await writeJSON(modelCacheFile(connection, paths), {
+    providerId: connection.providerId,
+    baseURL: connection.baseURL,
+    ...catalog,
+  });
 }
 
 /** 读取当前连接的模型清单缓存；临时文件丢失或损坏时视为无缓存。 */
-export async function loadModelCatalog(connection: SavedConnection, paths = providerStoragePaths): Promise<ModelCatalog | undefined> {
+export async function loadModelCatalog(
+  connection: SavedConnection,
+  paths = providerStoragePaths
+): Promise<ModelCatalog | undefined> {
   try {
-    const catalog = JSON.parse(await readFile(modelCacheFile(connection, paths), 'utf8')) as ModelCatalog;
-    if (!Array.isArray(catalog.models) || !catalog.models.every((model) => typeof model === 'string')
-      || !['api', 'documentation'].includes(catalog.source) || typeof catalog.updatedAt !== 'string') return undefined;
+    const catalog = JSON.parse(
+      await readFile(modelCacheFile(connection, paths), 'utf8')
+    ) as ModelCatalog;
+    if (
+      !Array.isArray(catalog.models) ||
+      !catalog.models.every(model => typeof model === 'string') ||
+      !['api', 'documentation'].includes(catalog.source) ||
+      typeof catalog.updatedAt !== 'string'
+    )
+      return undefined;
     return catalog;
   } catch {
     return undefined;

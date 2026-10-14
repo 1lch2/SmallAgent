@@ -16,7 +16,19 @@ export interface BashPathAnalysis {
 export function getBashEnvironment(): NodeJS.ProcessEnv {
   const env = { ...process.env };
   for (const key of Object.keys(env)) {
-    if (key.startsWith('BASH_FUNC_') || ['BASH_ENV', 'ENV', 'SHELLOPTS', 'BASHOPTS', 'CDPATH', 'GLOBIGNORE', 'POSIXLY_CORRECT', 'BASH_COMPAT'].includes(key)) {
+    if (
+      key.startsWith('BASH_FUNC_') ||
+      [
+        'BASH_ENV',
+        'ENV',
+        'SHELLOPTS',
+        'BASHOPTS',
+        'CDPATH',
+        'GLOBIGNORE',
+        'POSIXLY_CORRECT',
+        'BASH_COMPAT',
+      ].includes(key)
+    ) {
       delete env[key];
     }
   }
@@ -36,28 +48,140 @@ interface Token {
 const separators = new Set([';', '&&', '||', '|', '|&']);
 const redirects = new Set(['>', '>>', '>|', '<', '<>', '&>', '&>>', '>&', '<&']);
 const blockedCommands = new Set([
-  'cd', 'pushd', 'popd', 'eval', 'exec', 'source', '.', 'alias', 'unalias',
-  'export', 'unset', 'declare', 'typeset', 'local', 'readonly', 'read', 'mapfile',
-  'readarray', 'set', 'shopt', 'trap', 'enable', 'hash', 'builtin', 'command',
-  'env', 'sudo', 'su', 'xargs', 'bash', 'sh', 'dash', 'zsh', 'fish', 'ksh',
-  'pwsh', 'powershell', 'cmd', 'ssh', 'nohup', 'timeout', 'time', 'coproc',
-  'if', 'then', 'else', 'elif', 'fi', 'for', 'while', 'until', 'do', 'done',
-  'case', 'esac', 'function', 'select', '!', '[[', '[', 'test', 'sed', 'awk',
+  'cd',
+  'pushd',
+  'popd',
+  'eval',
+  'exec',
+  'source',
+  '.',
+  'alias',
+  'unalias',
+  'export',
+  'unset',
+  'declare',
+  'typeset',
+  'local',
+  'readonly',
+  'read',
+  'mapfile',
+  'readarray',
+  'set',
+  'shopt',
+  'trap',
+  'enable',
+  'hash',
+  'builtin',
+  'command',
+  'env',
+  'sudo',
+  'su',
+  'xargs',
+  'bash',
+  'sh',
+  'dash',
+  'zsh',
+  'fish',
+  'ksh',
+  'pwsh',
+  'powershell',
+  'cmd',
+  'ssh',
+  'nohup',
+  'timeout',
+  'time',
+  'coproc',
+  'if',
+  'then',
+  'else',
+  'elif',
+  'fi',
+  'for',
+  'while',
+  'until',
+  'do',
+  'done',
+  'case',
+  'esac',
+  'function',
+  'select',
+  '!',
+  '[[',
+  '[',
+  'test',
+  'sed',
+  'awk',
 ]);
 const fileCommands = new Set([
-  'cat', 'ls', 'head', 'tail', 'wc', 'sort', 'uniq', 'cut', 'paste', 'tee',
-  'cp', 'mv', 'rm', 'mkdir', 'rmdir', 'touch', 'stat', 'file', 'du', 'df',
-  'readlink', 'realpath', 'diff', 'cmp', 'comm', 'basename', 'dirname',
+  'cat',
+  'ls',
+  'head',
+  'tail',
+  'wc',
+  'sort',
+  'uniq',
+  'cut',
+  'paste',
+  'tee',
+  'cp',
+  'mv',
+  'rm',
+  'mkdir',
+  'rmdir',
+  'touch',
+  'stat',
+  'file',
+  'du',
+  'df',
+  'readlink',
+  'realpath',
+  'diff',
+  'cmp',
+  'comm',
+  'basename',
+  'dirname',
 ]);
 // 参数角色按命令声明，文本、数字参数不参与路径判断。
 const valueOptions: Record<string, string[]> = {
   head: ['-n', '-c', '--lines', '--bytes'],
-  tail: ['-n', '-c', '-s', '--lines', '--bytes', '--sleep-interval', '--pid', '--max-unchanged-stats'],
+  tail: [
+    '-n',
+    '-c',
+    '-s',
+    '--lines',
+    '--bytes',
+    '--sleep-interval',
+    '--pid',
+    '--max-unchanged-stats',
+  ],
   sort: ['-k', '-t', '--key', '--field-separator', '--parallel', '-S', '--buffer-size'],
   uniq: ['-f', '-s', '-w', '--skip-fields', '--skip-chars', '--check-chars'],
-  cut: ['-b', '-c', '-f', '-d', '--bytes', '--characters', '--fields', '--delimiter', '--output-delimiter'],
+  cut: [
+    '-b',
+    '-c',
+    '-f',
+    '-d',
+    '--bytes',
+    '--characters',
+    '--fields',
+    '--delimiter',
+    '--output-delimiter',
+  ],
   paste: ['-d', '--delimiters'],
-  ls: ['--color', '--format', '--sort', '--time', '--time-style', '--quoting-style', '-I', '--ignore', '--hide', '-w', '--width', '--block-size'],
+  ls: [
+    '--color',
+    '--format',
+    '--sort',
+    '--time',
+    '--time-style',
+    '--quoting-style',
+    '-I',
+    '--ignore',
+    '--hide',
+    '-w',
+    '--width',
+    '--block-size',
+  ],
   mkdir: ['-m', '--mode'],
   touch: ['-t', '-d', '--date'],
   stat: ['-c', '--format', '--printf'],
@@ -66,27 +190,65 @@ const valueOptions: Record<string, string[]> = {
   diff: ['-U', '-C', '--unified', '--context', '-I', '--ignore-matching-lines', '-x', '--exclude'],
 };
 const pathOptions: Record<string, string[]> = {
-  cp: ['-t', '--target-directory'], mv: ['-t', '--target-directory'],
+  cp: ['-t', '--target-directory'],
+  mv: ['-t', '--target-directory'],
   sort: ['-o', '--output', '-T', '--temporary-directory'],
-  touch: ['-r', '--reference'], diff: ['-X', '--exclude-from'],
+  touch: ['-r', '--reference'],
+  diff: ['-X', '--exclude-from'],
 };
 const shortFlags: Record<string, string> = {
-  cat: 'AbEenstTuv', ls: 'aAbBcCdDfFgGhHiIklmnpqQrRsStTuUvwxX1',
-  head: 'qvz', tail: 'fFqvz', wc: 'clmwL', sort: 'bdfghinMnrRsuVz',
-  uniq: 'cdiuzD', cut: 'nsz', paste: 'sz', tee: 'ai', cp: 'abdfHiklnpPrRsuTvx',
-  mv: 'bfintuvTZ', rm: 'dfirRvI', mkdir: 'pvZ', rmdir: 'pv', touch: 'acfh',
-  stat: 'ft', file: 'bchikLnNprsz', du: 'achksx', df: 'ahikPT',
-  readlink: 'efmnqsvz', realpath: 'eLmPqsz', diff: 'abBcdDeEfHinqrsStyuwy',
-  cmp: 'bls', comm: '123z', basename: 'az', dirname: 'z',
+  cat: 'AbEenstTuv',
+  ls: 'aAbBcCdDfFgGhHiIklmnpqQrRsStTuUvwxX1',
+  head: 'qvz',
+  tail: 'fFqvz',
+  wc: 'clmwL',
+  sort: 'bdfghinMnrRsuVz',
+  uniq: 'cdiuzD',
+  cut: 'nsz',
+  paste: 'sz',
+  tee: 'ai',
+  cp: 'abdfHiklnpPrRsuTvx',
+  mv: 'bfintuvTZ',
+  rm: 'dfirRvI',
+  mkdir: 'pvZ',
+  rmdir: 'pv',
+  touch: 'acfh',
+  stat: 'ft',
+  file: 'bchikLnNprsz',
+  du: 'achksx',
+  df: 'ahikPT',
+  readlink: 'efmnqsvz',
+  realpath: 'eLmPqsz',
+  diff: 'abBcdDeEfHinqrsStyuwy',
+  cmp: 'bls',
+  comm: '123z',
+  basename: 'az',
+  dirname: 'z',
 };
 const longFlags = new Set([
-  '--help', '--version', '--recursive', '--archive', '--force', '--verbose',
-  '--parents', '--no-target-directory', '--no-clobber', '--preserve',
-  '--number', '--human-readable', '--all', '--summarize', '--null',
+  '--help',
+  '--version',
+  '--recursive',
+  '--archive',
+  '--force',
+  '--verbose',
+  '--parents',
+  '--no-target-directory',
+  '--no-clobber',
+  '--preserve',
+  '--number',
+  '--human-readable',
+  '--all',
+  '--summarize',
+  '--null',
 ]);
 
 /** 只分析静态简单命令、管道和重定向；动态 Shell 语法明确拒绝。 */
-export async function getBashPaths(command: string, cwd: string, shellPath: string): Promise<BashPathAnalysis> {
+export async function getBashPaths(
+  command: string,
+  cwd: string,
+  shellPath: string
+): Promise<BashPathAnalysis> {
   const invalid: BashPathAnalysis = { valid: false, paths: [], recursivePaths: [] };
   const tokens = tokenize(command);
   if (!tokens) return invalid;
@@ -95,14 +257,19 @@ export async function getBashPaths(command: string, cwd: string, shellPath: stri
     // -n 仅检查语法；-p 禁止 BASH_ENV、继承函数及 Shell 选项改变分析语义。
     await execFileAsync(shellPath, ['--noprofile', '--norc', '-p', '-n', '-c', command], options);
   } catch (error) {
-    if (typeof error === 'object' && error !== null && 'code' in error && error.code === 2) return invalid;
+    if (typeof error === 'object' && error !== null && 'code' in error && error.code === 2)
+      return invalid;
     throw error;
   }
 
-  const words = tokens.flatMap((token) => token.word ? [token.word] : []);
+  const words = tokens.flatMap(token => (token.word ? [token.word] : []));
   // raw 来自受限词法分析，只含常量及文件名展开；不执行任何用户命令或表达式。
-  const expansion = words.map((word) => `set -- ${word.raw}; printf '%s\\0' "$#" "$@"`).join('\n');
-  const { stdout } = await execFileAsync(shellPath, ['--noprofile', '--norc', '-p', '-c', expansion], options);
+  const expansion = words.map(word => `set -- ${word.raw}; printf '%s\\0' "$#" "$@"`).join('\n');
+  const { stdout } = await execFileAsync(
+    shellPath,
+    ['--noprofile', '--norc', '-p', '-c', expansion],
+    options
+  );
   const fields = stdout.split('\0');
   const expanded = new Map<Word, string[]>();
   let offset = 0;
@@ -130,7 +297,7 @@ export async function getBashPaths(command: string, cwd: string, shellPath: stri
       if (token.word.glob) paths.push(...values);
       args.push(...values);
     } else if (separators.has(token.operator!)) {
-      if (!await flush()) return invalid;
+      if (!(await flush())) return invalid;
     } else {
       const word = tokens[++i]?.word;
       if (!word) return invalid;
@@ -140,7 +307,7 @@ export async function getBashPaths(command: string, cwd: string, shellPath: stri
       if (!fd || !/^(?:[0-9]+-?|-)$/.test(values[0])) paths.push(values[0]);
     }
   }
-  if (!await flush()) return invalid;
+  if (!(await flush())) return invalid;
   return { valid: true, paths, recursivePaths };
 }
 
@@ -174,7 +341,11 @@ function tokenize(command: string): Token[] | null {
       if (char === '"') quote = '';
       continue;
     }
-    if (char === "'" || char === '"') { quote = char; raw += char; continue; }
+    if (char === "'" || char === '"') {
+      quote = char;
+      raw += char;
+      continue;
+    }
     if ('(){}'.includes(char)) return null;
     if (char === '#' && !raw) {
       while (i + 1 < command.length && command[i + 1] !== '\n') i++;
@@ -188,7 +359,10 @@ function tokenize(command: string): Token[] | null {
     if (';&|<>'.includes(char)) {
       let operator = char;
       for (const candidate of ['&>>', '>>', '>|', '<>', '&>', '>&', '<&', '&&', '||', '|&']) {
-        if (command.startsWith(candidate, i)) { operator = candidate; break; }
+        if (command.startsWith(candidate, i)) {
+          operator = candidate;
+          break;
+        }
       }
       if (!separators.has(operator) && !redirects.has(operator)) return null;
       if (redirects.has(operator) && /^\d+$/.test(raw)) raw = '';
@@ -209,7 +383,12 @@ function tokenize(command: string): Token[] | null {
   return tokens;
 }
 
-async function inspectCommand(args: string[], cwd: string, paths: string[], recursivePaths: string[]): Promise<boolean> {
+async function inspectCommand(
+  args: string[],
+  cwd: string,
+  paths: string[],
+  recursivePaths: string[]
+): Promise<boolean> {
   const [executable, ...operands] = args;
   const name = path.basename(executable);
   if (!executable || executable.includes('=') || blockedCommands.has(name)) return false;
@@ -217,7 +396,10 @@ async function inspectCommand(args: string[], cwd: string, paths: string[], recu
   if (name === 'echo') return true;
   if (name === 'printf') {
     const format = operands[0] === '--' ? operands[1] : operands[0];
-    return !operands.some((arg) => arg.startsWith('-v')) && !/%[-+ #0]*(?:\d+|\*)?(?:\.(?:\d+|\*))?n/.test(format ?? '');
+    return (
+      !operands.some(arg => arg.startsWith('-v')) &&
+      !/%[-+ #0]*(?:\d+|\*)?(?:\.(?:\d+|\*))?n/.test(format ?? '')
+    );
   }
   if (['pwd', 'true', 'false'].includes(name)) return true;
   if (name === 'find') return inspectFind(operands, paths);
@@ -226,7 +408,11 @@ async function inspectCommand(args: string[], cwd: string, paths: string[], recu
     return inspectFileArguments(name, operands, paths, recursivePaths);
   }
   // 外部程序内部行为不属于路径预检查；拒绝常见内联代码入口。
-  if (['node', 'nodejs', 'python', 'python3', 'perl', 'ruby'].includes(name) && operands.some((arg) => /^-(?:[^-]*[ecp]|-eval|-print|-require|-import)/.test(arg))) return false;
+  if (
+    ['node', 'nodejs', 'python', 'python3', 'perl', 'ruby'].includes(name) &&
+    operands.some(arg => /^-(?:[^-]*[ecp]|-eval|-print|-require|-import)/.test(arg))
+  )
+    return false;
   for (const argument of operands) {
     const candidate = argument.replace(/^(?:--?)?[\w-]+=/, '').replace(/^-[CILo](?=.)/, '');
     if (/^https?:\/\//i.test(candidate)) continue;
@@ -234,78 +420,219 @@ async function inspectCommand(args: string[], cwd: string, paths: string[], recu
     if (candidate.includes('/') || candidate === '..' || candidate.startsWith('~')) {
       paths.push(candidate);
     } else {
-      try { await fs.lstat(path.resolve(cwd, candidate)); paths.push(candidate); }
-      catch (error) {
-        if (!(typeof error === 'object' && error !== null && 'code' in error && error.code === 'ENOENT')) throw error;
+      try {
+        await fs.lstat(path.resolve(cwd, candidate));
+        paths.push(candidate);
+      } catch (error) {
+        if (!(
+          typeof error === 'object' &&
+          error !== null &&
+          'code' in error &&
+          error.code === 'ENOENT'
+        ))
+          throw error;
       }
     }
   }
   return true;
 }
 
-function inspectFileArguments(name: string, args: string[], paths: string[], recursivePaths: string[]): boolean {
+function inspectFileArguments(
+  name: string,
+  args: string[],
+  paths: string[],
+  recursivePaths: string[]
+): boolean {
   let options = true;
   let targetDirectory = false;
   let recursive = name === 'mv';
   const operands: string[] = [];
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
-    if (options && arg === '--') { options = false; continue; }
+    if (options && arg === '--') {
+      options = false;
+      continue;
+    }
     if (options && arg.startsWith('-') && arg !== '-') {
-      if (['cp', 'rm'].includes(name) && (/^-[^-]*[rRa]/.test(arg) || arg === '--recursive' || arg === '--archive')) recursive = true;
+      if (
+        ['cp', 'rm'].includes(name) &&
+        (/^-[^-]*[rRa]/.test(arg) || arg === '--recursive' || arg === '--archive')
+      )
+        recursive = true;
       // 不跟随递归链接，也不允许通过选项引入文件列表或执行其他程序。
-      if (/^-[^-]*L/.test(arg) || ['--dereference', '--files0-from', '--compress-program'].some((option) => arg === option || arg.startsWith(option + '='))) return false;
+      if (
+        /^-[^-]*L/.test(arg) ||
+        ['--dereference', '--files0-from', '--compress-program'].some(
+          option => arg === option || arg.startsWith(option + '=')
+        )
+      )
+        return false;
       const key = arg.split('=')[0];
       const roles = [...(valueOptions[name] ?? []), ...(pathOptions[name] ?? [])];
-      const option = roles.find((entry) => key === entry || (entry.length === 2 && arg.startsWith(entry)));
+      const option = roles.find(
+        entry => key === entry || (entry.length === 2 && arg.startsWith(entry))
+      );
       if (option) {
         const attached = arg.slice(option.length).replace(/^=/, '');
         const value = attached || args[++i];
         if (value === undefined) return false;
-        if (pathOptions[name]?.includes(option)) { if (!value) return false; paths.push(value); }
+        if (pathOptions[name]?.includes(option)) {
+          if (!value) return false;
+          paths.push(value);
+        }
         if (option === '-t' || option === '--target-directory') targetDirectory = true;
-      } else if (!longFlags.has(arg) && !(/^-[^-]+$/.test(arg) && [...arg.slice(1)].every((char) => shortFlags[name]?.includes(char)))) {
+      } else if (
+        !longFlags.has(arg) &&
+        !(/^-[^-]+$/.test(arg) && [...arg.slice(1)].every(char => shortFlags[name]?.includes(char)))
+      ) {
         // 未声明选项或携带值的组合短选项不能保证没有隐藏路径。
         return false;
       }
       continue;
     }
     if (!arg) return false;
-    if (arg !== '-') { paths.push(arg); operands.push(arg); }
+    if (arg !== '-') {
+      paths.push(arg);
+      operands.push(arg);
+    }
   }
-  if (recursive) recursivePaths.push(...(name === 'rm' || targetDirectory ? operands : operands.slice(0, -1)));
+  if (recursive)
+    recursivePaths.push(...(name === 'rm' || targetDirectory ? operands : operands.slice(0, -1)));
   return true;
 }
 
 function inspectSearch(name: string, args: string[], paths: string[]): boolean {
-  const textOptions = new Set(['-e', '--regexp', '-g', '--glob', '--iglob', '-t', '--type', '-T', '--type-not', '-m', '--max-count', '-A', '-B', '-C', '--after-context', '--before-context', '--context', '--include', '--exclude', '--exclude-dir', '--encoding', '-j', '--threads']);
+  const textOptions = new Set([
+    '-e',
+    '--regexp',
+    '-g',
+    '--glob',
+    '--iglob',
+    '-t',
+    '--type',
+    '-T',
+    '--type-not',
+    '-m',
+    '--max-count',
+    '-A',
+    '-B',
+    '-C',
+    '--after-context',
+    '--before-context',
+    '--context',
+    '--include',
+    '--exclude',
+    '--exclude-dir',
+    '--encoding',
+    '-j',
+    '--threads',
+  ]);
   const fileOptions = new Set(['-f', '--file', '--exclude-from']);
   let pattern = false;
   let options = true;
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
-    if (options && arg === '--') { options = false; continue; }
+    if (options && arg === '--') {
+      options = false;
+      continue;
+    }
     if (options && arg.startsWith('-') && arg !== '-') {
-      const option = [...textOptions, ...fileOptions].find((key) => arg === key || arg.startsWith(key + '=') || (key.length === 2 && arg.startsWith(key)));
+      const option = [...textOptions, ...fileOptions].find(
+        key => arg === key || arg.startsWith(key + '=') || (key.length === 2 && arg.startsWith(key))
+      );
       if (option) {
         const attached = arg.slice(option.length).replace(/^=/, '');
         const value = attached || args[++i];
         if (value === undefined) return false;
-        if (fileOptions.has(option)) { if (!value) return false; paths.push(value); }
+        if (fileOptions.has(option)) {
+          if (!value) return false;
+          paths.push(value);
+        }
         if (['-e', '--regexp', '-f', '--file'].includes(option)) pattern = true;
-      } else if (!/^-[ivnHhlocrqsFwExabzUV]+$/.test(arg) && !['--hidden', '--files', '--line-number', '--files-with-matches', '--ignore-case', '--fixed-strings', '--no-ignore', '--recursive', '--count', '--no-heading', '--with-filename', '--no-filename', '--quiet'].includes(arg)) return false;
+      } else if (
+        !/^-[ivnHhlocrqsFwExabzUV]+$/.test(arg) &&
+        ![
+          '--hidden',
+          '--files',
+          '--line-number',
+          '--files-with-matches',
+          '--ignore-case',
+          '--fixed-strings',
+          '--no-ignore',
+          '--recursive',
+          '--count',
+          '--no-heading',
+          '--with-filename',
+          '--no-filename',
+          '--quiet',
+        ].includes(arg)
+      )
+        return false;
       continue;
     }
     if (!pattern && !(name === 'rg' && args.includes('--files'))) pattern = true;
-    else { if (!arg) return false; if (arg !== '-') paths.push(arg); }
+    else {
+      if (!arg) return false;
+      if (arg !== '-') paths.push(arg);
+    }
   }
   return true;
 }
 
 function inspectFind(args: string[], paths: string[]): boolean {
-  const textOptions = new Set(['-name', '-iname', '-path', '-ipath', '-regex', '-iregex', '-type', '-maxdepth', '-mindepth', '-size', '-mtime', '-mmin', '-atime', '-amin', '-ctime', '-cmin', '-user', '-group', '-perm', '-printf']);
-  const pathOptions = new Set(['-newer', '-anewer', '-cnewer', '-samefile', '-fprint', '-fprint0', '-fls']);
-  const flags = new Set(['-P', '-print', '-print0', '-ls', '-delete', '-empty', '-type', '-readable', '-writable', '-executable', '-prune', '-depth', '-xdev', '-mount', '-a', '-and', '-o', '-or', '-not', '!']);
+  const textOptions = new Set([
+    '-name',
+    '-iname',
+    '-path',
+    '-ipath',
+    '-regex',
+    '-iregex',
+    '-type',
+    '-maxdepth',
+    '-mindepth',
+    '-size',
+    '-mtime',
+    '-mmin',
+    '-atime',
+    '-amin',
+    '-ctime',
+    '-cmin',
+    '-user',
+    '-group',
+    '-perm',
+    '-printf',
+  ]);
+  const pathOptions = new Set([
+    '-newer',
+    '-anewer',
+    '-cnewer',
+    '-samefile',
+    '-fprint',
+    '-fprint0',
+    '-fls',
+  ]);
+  const flags = new Set([
+    '-P',
+    '-print',
+    '-print0',
+    '-ls',
+    '-delete',
+    '-empty',
+    '-type',
+    '-readable',
+    '-writable',
+    '-executable',
+    '-prune',
+    '-depth',
+    '-xdev',
+    '-mount',
+    '-a',
+    '-and',
+    '-o',
+    '-or',
+    '-not',
+    '!',
+  ]);
   let expression = false;
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];

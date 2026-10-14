@@ -5,7 +5,14 @@ import type { ProviderDefinition } from '../providers/catalog';
 import { providers } from '../providers/catalog';
 import { connectProvider, fetchModelCatalog } from '../providers/connect';
 import type { ProviderConnection } from '../providers/connect';
-import { loadModelCatalog, loadProviderSettings, providerStoragePaths, saveModelCatalog, saveProviderConnection, saveProviderSettings } from '../providers/storage';
+import {
+  loadModelCatalog,
+  loadProviderSettings,
+  providerStoragePaths,
+  saveModelCatalog,
+  saveProviderConnection,
+  saveProviderSettings,
+} from '../providers/storage';
 import type { ModelCatalog, ProviderSettings, ProviderStoragePaths } from '../providers/storage';
 import { OpenAILLM } from '../openai-llm';
 
@@ -36,7 +43,10 @@ export interface ProviderSessionProps {
 }
 
 /** 管理连接和页面状态，启动时只读取本地选项并初始化模型。 */
-export function ProviderSession({ children, storagePaths = providerStoragePaths }: ProviderSessionProps) {
+export function ProviderSession({
+  children,
+  storagePaths = providerStoragePaths,
+}: ProviderSessionProps) {
   const [connection, setConnection] = useState<ProviderConnection>();
   const [settings, setSettings] = useState<ProviderSettings>({ connections: [] });
   const [view, setView] = useState<ProviderSessionState['view']>('chat');
@@ -57,11 +67,17 @@ export function ProviderSession({ children, storagePaths = providerStoragePaths 
         const saved = await loadProviderSettings(storagePaths);
         if (cancelled) return;
         setSettings(saved);
-        const selected = saved.connections.find((item) => item.providerId === saved.selectedProviderId);
+        const selected = saved.connections.find(
+          item => item.providerId === saved.selectedProviderId
+        );
         if (selected) {
           activate({
             options: selected,
-            llm: new OpenAILLM({ apiKey: selected.apiKey, baseURL: selected.baseURL, model: selected.model }),
+            llm: new OpenAILLM({
+              apiKey: selected.apiKey,
+              baseURL: selected.baseURL,
+              model: selected.model,
+            }),
           });
         }
       } catch (err) {
@@ -79,9 +95,12 @@ export function ProviderSession({ children, storagePaths = providerStoragePaths 
   async function connect(provider: ProviderDefinition, apiKey: string, baseURL?: string) {
     const next = await connectProvider(provider, apiKey, baseURL, storagePaths);
     activate(next);
-    setSettings((previous) => ({
+    setSettings(previous => ({
       selectedProviderId: provider.id,
-      connections: [...previous.connections.filter((item) => item.providerId !== provider.id), next.options],
+      connections: [
+        ...previous.connections.filter(item => item.providerId !== provider.id),
+        next.options,
+      ],
     }));
     setError(undefined);
     setView('chat');
@@ -92,8 +111,12 @@ export function ProviderSession({ children, storagePaths = providerStoragePaths 
     if (connection.catalog) return connection.catalog;
     const cached = await loadModelCatalog(connection.options, storagePaths);
     if (cached?.models.length) return cached;
-    const provider = providers.find((item) => item.id === connection.options.providerId)!;
-    const catalog = await fetchModelCatalog(provider, connection.options.apiKey, connection.options.baseURL);
+    const provider = providers.find(item => item.id === connection.options.providerId)!;
+    const catalog = await fetchModelCatalog(
+      provider,
+      connection.options.apiKey,
+      connection.options.baseURL
+    );
     try {
       await saveModelCatalog(connection.options, catalog, storagePaths);
     } catch {
@@ -112,9 +135,11 @@ export function ProviderSession({ children, storagePaths = providerStoragePaths 
         throw new Error('模型选择保存失败，请检查本地配置文件。');
       }
       activate({ ...connection, options, llm: new OpenAILLM(options) });
-      setSettings((previous) => ({
+      setSettings(previous => ({
         ...previous,
-        connections: previous.connections.map((item) => item.providerId === options.providerId ? options : item),
+        connections: previous.connections.map(item =>
+          item.providerId === options.providerId ? options : item
+        ),
       }));
     }
     setView('chat');
@@ -122,12 +147,14 @@ export function ProviderSession({ children, storagePaths = providerStoragePaths 
 
   async function removeProvider(providerId: string) {
     const saved = await loadProviderSettings(storagePaths);
-    if (!saved.connections.some((item) => item.providerId === providerId)) return;
-    const remaining = saved.connections.filter((item) => item.providerId !== providerId);
-    const provider = providers.find((item) => remaining.some((option) => option.providerId === item.id));
+    if (!saved.connections.some(item => item.providerId === providerId)) return;
+    const remaining = saved.connections.filter(item => item.providerId !== providerId);
+    const provider = providers.find(item =>
+      remaining.some(option => option.providerId === item.id)
+    );
     let next: ProviderConnection | undefined;
     if (provider) {
-      const options = remaining.find((item) => item.providerId === provider.id)!;
+      const options = remaining.find(item => item.providerId === provider.id)!;
       let catalog = connection?.options.providerId === provider.id ? connection.catalog : undefined;
       catalog ??= await loadModelCatalog(options, storagePaths);
       if (!catalog?.models.length) {
@@ -139,7 +166,9 @@ export function ProviderSession({ children, storagePaths = providerStoragePaths 
     }
     const updated: ProviderSettings = {
       selectedProviderId: next?.options.providerId,
-      connections: remaining.map((item) => item.providerId === next?.options.providerId ? next.options : item),
+      connections: remaining.map(item =>
+        item.providerId === next?.options.providerId ? next.options : item
+      ),
     };
     try {
       await saveProviderSettings(updated, storagePaths);
@@ -178,4 +207,3 @@ export function ProviderSession({ children, storagePaths = providerStoragePaths 
     </ProviderSessionContext.Provider>
   );
 }
-

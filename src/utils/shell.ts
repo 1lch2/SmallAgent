@@ -13,7 +13,7 @@ export interface ShellInfo {
 /** 获取当前平台实际用于执行终端命令的 Shell 信息。 */
 export function getCurrentShellInfo(): ShellInfo {
   if (process.platform !== 'win32') {
-    const bashPath = ['/bin/bash', '/usr/bin/bash'].find((candidate) => existsSync(candidate));
+    const bashPath = ['/bin/bash', '/usr/bin/bash'].find(candidate => existsSync(candidate));
     return bashPath ? { type: 'bash', path: bashPath } : { type: 'sh', path: '/bin/sh' };
   }
 
@@ -21,7 +21,7 @@ export function getCurrentShellInfo(): ShellInfo {
     process.env.ProgramFiles || 'C:\\Program Files',
     'PowerShell',
     '7',
-    'pwsh.exe',
+    'pwsh.exe'
   );
   if (existsSync(powershell7Path)) return { type: 'powershell', path: powershell7Path };
 
@@ -31,7 +31,7 @@ export function getCurrentShellInfo(): ShellInfo {
     'System32',
     'WindowsPowerShell',
     'v1.0',
-    'powershell.exe',
+    'powershell.exe'
   );
   if (existsSync(powershell5Path)) return { type: 'powershell', path: powershell5Path };
 

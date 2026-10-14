@@ -15,7 +15,14 @@ export interface ProviderConnection {
 export function normalizeBaseURL(value: string): string {
   try {
     const url = new URL(value.trim());
-    if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password || url.search || url.hash) throw new Error();
+    if (
+      !['http:', 'https:'].includes(url.protocol) ||
+      url.username ||
+      url.password ||
+      url.search ||
+      url.hash
+    )
+      throw new Error();
     return url.href.replace(/\/$/, '');
   } catch {
     throw new Error('请输入有效的 HTTP 或 HTTPS API 基础地址。');
@@ -26,15 +33,24 @@ async function modelsFromDocument(provider: ProviderDefinition): Promise<string[
   const response = await fetch(provider.modelsDocument!, { signal: AbortSignal.timeout(20_000) });
   if (!response.ok) throw new Error(`官方模型文档读取失败（HTTP ${response.status}）。`);
   const text = await response.text();
-  const names = provider.id === 'glm-api'
-    ? [...text.matchAll(/^\s*\|\s*\[(GLM-[^\]]+)\]\(\/cn\/guide\/models\/(?:text|vlm|free)\/[^)]+\)/gm)]
-      .map((match) => match[1]!.toLowerCase()).filter((name) => name !== 'glm-ocr')
-    : [...text.matchAll(/\bglm-\d[\w.-]*/gi)].map((match) => match[0].toLowerCase());
+  const names =
+    provider.id === 'glm-api'
+      ? [
+          ...text.matchAll(
+            /^\s*\|\s*\[(GLM-[^\]]+)\]\(\/cn\/guide\/models\/(?:text|vlm|free)\/[^)]+\)/gm
+          ),
+        ]
+          .map(match => match[1]!.toLowerCase())
+          .filter(name => name !== 'glm-ocr')
+      : [...text.matchAll(/\bglm-\d[\w.-]*/gi)].map(match => match[0].toLowerCase());
   return [...new Set(names)];
 }
 
 function connectionError(error: unknown, stage: string): Error {
-  if (error instanceof OpenAI.APIError) return new Error(`${stage}失败${error.status ? `（HTTP ${error.status}）` : ''}。请检查端点、API Key 和套餐权限。`);
+  if (error instanceof OpenAI.APIError)
+    return new Error(
+      `${stage}失败${error.status ? `（HTTP ${error.status}）` : ''}。请检查端点、API Key 和套餐权限。`
+    );
   return new Error(`${stage}失败，请检查网络及服务端状态。`);
 }
 
@@ -42,7 +58,7 @@ function connectionError(error: unknown, stage: string): Error {
 export async function fetchModelCatalog(
   provider: ProviderDefinition,
   apiKey: string,
-  baseURL = provider.baseURL ?? '',
+  baseURL = provider.baseURL ?? ''
 ): Promise<ModelCatalog> {
   const key = apiKey.trim();
   if (!key) throw new Error('请输入 API Key。');
@@ -57,10 +73,17 @@ export async function fetchModelCatalog(
     }
     models = [...new Set(models)];
   } catch (error) {
-    if (provider.modelsDocument && error instanceof OpenAI.APIError && [404, 405, 501].includes(error.status ?? 0)) {
+    if (
+      provider.modelsDocument &&
+      error instanceof OpenAI.APIError &&
+      [404, 405, 501].includes(error.status ?? 0)
+    ) {
       source = 'documentation';
-      try { models = await modelsFromDocument(provider); }
-      catch { throw new Error('模型列表接口不可用，且无法读取官方模型文档。'); }
+      try {
+        models = await modelsFromDocument(provider);
+      } catch {
+        throw new Error('模型列表接口不可用，且无法读取官方模型文档。');
+      }
     } else {
       throw connectionError(error, '模型列表查询');
     }
@@ -74,7 +97,7 @@ export async function connectProvider(
   provider: ProviderDefinition,
   apiKey: string,
   baseURL = provider.baseURL ?? '',
-  paths: ProviderStoragePaths = providerStoragePaths,
+  paths: ProviderStoragePaths = providerStoragePaths
 ): Promise<ProviderConnection> {
   const key = apiKey.trim();
   const endpoint = normalizeBaseURL(provider.baseURL ?? baseURL);
@@ -83,13 +106,21 @@ export async function connectProvider(
   const client = new OpenAI({ apiKey: key, baseURL: endpoint, timeout: 20_000, maxRetries: 0 });
   try {
     const response = await client.chat.completions.create({
-      model, messages: [{ role: 'user', content: 'Reply OK.' }], max_tokens: 16, stream: false,
+      model,
+      messages: [{ role: 'user', content: 'Reply OK.' }],
+      max_tokens: 16,
+      stream: false,
     });
     if (!response.choices?.length) throw new Error();
   } catch (error) {
     throw connectionError(error, '模型连接');
   }
-  const options: SavedConnection = { providerId: provider.id, baseURL: endpoint, model, apiKey: key };
+  const options: SavedConnection = {
+    providerId: provider.id,
+    baseURL: endpoint,
+    model,
+    apiKey: key,
+  };
   try {
     await saveModelCatalog(options, catalog, paths);
     await saveProviderConnection(options, paths);

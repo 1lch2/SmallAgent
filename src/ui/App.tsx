@@ -23,7 +23,11 @@ export function App() {
   const [input, setInput] = useState('');
   const [entries, setEntries] = useState<Entry[]>([]);
   const [busy, setBusy] = useState(false);
-  const [tokenUsage, setTokenUsage] = useState<TokenUsage>({ totalTokens: 0, promptTokens: 0, cachedTokens: 0 });
+  const [tokenUsage, setTokenUsage] = useState<TokenUsage>({
+    totalTokens: 0,
+    promptTokens: 0,
+    cachedTokens: 0,
+  });
 
   useEffect(() => {
     setTokenUsage({ totalTokens: 0, promptTokens: 0, cachedTokens: 0 });
@@ -47,7 +51,7 @@ export function App() {
     }
     if (u.kind === 'tool_result' && (u.name === 'file_read' || u.name === 'file_write')) return;
 
-    setEntries((prev) => {
+    setEntries(prev => {
       switch (u.kind) {
         case 'assistant_text_thinking':
         case 'assistant_text_response':
@@ -66,11 +70,14 @@ export function App() {
     const text = value.trim();
     if (!text || busy) return;
     if (!agent || !connection) {
-      setEntries((previous) => [...previous, { type: 'error', text: '未连接任何模型，请使用 /provider 连接服务商。' }]);
+      setEntries(previous => [
+        ...previous,
+        { type: 'error', text: '未连接任何模型，请使用 /provider 连接服务商。' },
+      ]);
       return;
     }
     setInput('');
-    setEntries((prev) => [...prev, { type: 'user', text }]);
+    setEntries(prev => [...prev, { type: 'user', text }]);
     setBusy(true);
     try {
       await agent.send(text, handleUpdate);
@@ -84,39 +91,44 @@ export function App() {
 
   return (
     // 为 Ink 重绘后的换行保留一行；仅设置最小高度，让长消息自然延伸。
-    <Box flexDirection='column' paddingX={1} minHeight={Math.max(0, terminalRows - 1)}>
-      {!entries.some((entry) => entry.type === 'user') && (
-        <Box flexDirection='column' flexShrink={0} paddingLeft={1}>
-          <Text wrap='truncate-end'>
+    <Box flexDirection="column" paddingX={1} minHeight={Math.max(0, terminalRows - 1)}>
+      {!entries.some(entry => entry.type === 'user') && (
+        <Box flexDirection="column" flexShrink={0} paddingLeft={1}>
+          <Text wrap="truncate-end">
             <Text bold>{'>_ Liberi Code'}</Text>
             <Text dimColor>{` (v${version})`}</Text>
           </Text>
           <Box paddingLeft={3}>
-            <Text dimColor wrap='truncate-end'>
+            <Text dimColor wrap="truncate-end">
               {process.cwd()}
             </Text>
           </Box>
         </Box>
       )}
-      <Box flexDirection='column' flexGrow={1} flexShrink={0} marginBottom={1}>
+      <Box flexDirection="column" flexGrow={1} flexShrink={0} marginBottom={1}>
         {entries.map((entry, i) => (
-          <Box key={i} flexDirection='column' marginBottom={1}>
+          <Box key={i} flexDirection="column" marginBottom={1}>
             <Message entry={entry} width={Math.max(1, terminalColumns - 2)} />
           </Box>
         ))}
         {busy && (
           <Box>
-            <Text color='magenta'>
-              <Spinner type='dots' />
+            <Text color="magenta">
+              <Spinner type="dots" />
             </Text>
             <Text> Thinking...</Text>
           </Box>
         )}
       </Box>
-      <Box flexDirection='column' flexShrink={0}>
-        <CommandInput value={input} onChange={setInput} onSubmit={handleSubmit} commands={commands} />
+      <Box flexDirection="column" flexShrink={0}>
+        <CommandInput
+          value={input}
+          onChange={setInput}
+          onSubmit={handleSubmit}
+          commands={commands}
+        />
         {session.loadingConfig && <Text dimColor>正在读取本地配置...</Text>}
-        {session.error && <Text color='yellow'>{session.error} 使用 /provider 重新连接。</Text>}
+        {session.error && <Text color="yellow">{session.error} 使用 /provider 重新连接。</Text>}
         <Toolbar model={connection?.options.model} usage={tokenUsage} />
       </Box>
     </Box>

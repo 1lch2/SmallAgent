@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/format.mjs\"",
+            "timeout": 60,
+            "statusMessage": "使用 Prettier 格式化项目"
+          }
+        ]
+      }
+    ]
+  }
+}

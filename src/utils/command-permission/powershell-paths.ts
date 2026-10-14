@@ -113,16 +113,34 @@ try {
 `;
 
 /** 调用无配置文件的 PowerShell 解析器，按真实参数语义提取路径。 */
-export function getPowerShellPaths(command: string, cwd: string, shellPath: string): Promise<PowerShellPathAnalysis> {
+export function getPowerShellPaths(
+  command: string,
+  cwd: string,
+  shellPath: string
+): Promise<PowerShellPathAnalysis> {
   return new Promise((resolve, reject) => {
-    const child = execFile(shellPath, [
-      '-NoLogo', '-NoProfile', '-NonInteractive', '-EncodedCommand',
-      Buffer.from(parserScript, 'utf16le').toString('base64'),
-    ], { cwd, windowsHide: true, maxBuffer: 10 * 1024 * 1024, timeout: 15_000 }, (error, stdout) => {
-      if (error) { reject(error); return; }
-      try { resolve(JSON.parse(stdout) as PowerShellPathAnalysis); }
-      catch (parseError) { reject(parseError); }
-    });
+    const child = execFile(
+      shellPath,
+      [
+        '-NoLogo',
+        '-NoProfile',
+        '-NonInteractive',
+        '-EncodedCommand',
+        Buffer.from(parserScript, 'utf16le').toString('base64'),
+      ],
+      { cwd, windowsHide: true, maxBuffer: 10 * 1024 * 1024, timeout: 15_000 },
+      (error, stdout) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+        try {
+          resolve(JSON.parse(stdout) as PowerShellPathAnalysis);
+        } catch (parseError) {
+          reject(parseError);
+        }
+      }
+    );
     child.stdin?.on('error', reject);
     child.stdin?.end(JSON.stringify({ command, cwd }));
   });

@@ -16,13 +16,13 @@ export interface ToolbarProps {
 
 /** 展示模型名称、累计 Token 用量、缓存命中量与输入缓存命中率。 */
 export function Toolbar({ model, usage }: ToolbarProps) {
-  if (!model) return <Text color='gray'>未连接任何模型 · 使用 /provider 连接服务商</Text>;
+  if (!model) return <Text color="gray">未连接任何模型 · 使用 /provider 连接服务商</Text>;
   const cacheHitRate = usage.promptTokens > 0 ? usage.cachedTokens / usage.promptTokens : 0;
 
   return (
-    <Box width='100%' justifyContent='space-between' flexWrap='wrap'>
-      <Text color='gray'>{model}</Text>
-      <Text color='gray'>
+    <Box width="100%" justifyContent="space-between" flexWrap="wrap">
+      <Text color="gray">{model}</Text>
+      <Text color="gray">
         {`${formatTokenCount(usage.totalTokens)} tokens · 缓存 ${formatTokenCount(usage.cachedTokens)} tokens · 命中率 ${(cacheHitRate * 100).toFixed(1)}%`}
       </Text>
     </Box>

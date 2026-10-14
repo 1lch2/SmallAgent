@@ -100,11 +100,14 @@ function renderTable(table: Tokens.Table, width: number): ReactNode {
     }
     return result;
   });
-  const minimumWidths = widths.map((value) => Math.min(2, value));
+  const minimumWidths = widths.map(value => Math.min(2, value));
   const minimumContentWidth = minimumWidths.reduce((sum, value) => sum + value, 0);
   const padding = minimumContentWidth + (widths.length - 1) * 3 <= width ? 1 : 0;
   const separatorWidth = 1 + padding * 2;
-  const availableWidth = Math.max(minimumContentWidth, width - (widths.length - 1) * separatorWidth);
+  const availableWidth = Math.max(
+    minimumContentWidth,
+    width - (widths.length - 1) * separatorWidth
+  );
 
   // 优先保留短列，将长列压缩到共同上限，避免逐字符缩减长文本。
   if (widths.reduce((sum, value) => sum + value, 0) > availableWidth) {
@@ -112,7 +115,10 @@ function renderTable(table: Tokens.Table, width: number): ReactNode {
     let upper = Math.max(...widths);
     while (lower < upper) {
       const limit = Math.ceil((lower + upper) / 2);
-      const required = widths.reduce((sum, value, column) => sum + Math.max(minimumWidths[column], Math.min(value, limit)), 0);
+      const required = widths.reduce(
+        (sum, value, column) => sum + Math.max(minimumWidths[column], Math.min(value, limit)),
+        0
+      );
       if (required <= availableWidth) lower = limit;
       else upper = limit - 1;
     }
@@ -128,37 +134,44 @@ function renderTable(table: Tokens.Table, width: number): ReactNode {
       }
     }
   }
-  const tableWidth = widths.reduce((sum, value) => sum + value, 0) + (widths.length - 1) * separatorWidth;
-  const separator = widths.map((value) => '─'.repeat(value)).join('─'.repeat(padding) + '┼' + '─'.repeat(padding));
+  const tableWidth =
+    widths.reduce((sum, value) => sum + value, 0) + (widths.length - 1) * separatorWidth;
+  const separator = widths
+    .map(value => '─'.repeat(value))
+    .join('─'.repeat(padding) + '┼' + '─'.repeat(padding));
 
   return (
-    <Box flexDirection='column' width={tableWidth} flexShrink={0}>
+    <Box flexDirection="column" width={tableWidth} flexShrink={0}>
       {rows.map((row, rowIndex) => (
         <Fragment key={rowIndex}>
           {rowIndex > 0 && <Text>{separator}</Text>}
           <Box>
             {row.map((cell, column) => (
-                <Box
-                  key={column}
-                  width={widths[column] + (column > 0 ? 1 + padding : 0) + (column < widths.length - 1 ? padding : 0)}
-                  flexShrink={0}
-                  borderStyle='single'
-                  borderLeft={column > 0}
-                  borderTop={false}
-                  borderBottom={false}
-                  borderRight={false}
-                  paddingLeft={column > 0 ? padding : 0}
-                  paddingRight={column < widths.length - 1 ? padding : 0}
-                  justifyContent={
-                    table.align[column] === 'right'
-                      ? 'flex-end'
-                      : table.align[column] === 'center'
-                        ? 'center'
-                        : 'flex-start'
-                  }
-                >
-                  <Text bold={rowIndex === 0}>{renderInline(cell.tokens)}</Text>
-                </Box>
+              <Box
+                key={column}
+                width={
+                  widths[column] +
+                  (column > 0 ? 1 + padding : 0) +
+                  (column < widths.length - 1 ? padding : 0)
+                }
+                flexShrink={0}
+                borderStyle="single"
+                borderLeft={column > 0}
+                borderTop={false}
+                borderBottom={false}
+                borderRight={false}
+                paddingLeft={column > 0 ? padding : 0}
+                paddingRight={column < widths.length - 1 ? padding : 0}
+                justifyContent={
+                  table.align[column] === 'right'
+                    ? 'flex-end'
+                    : table.align[column] === 'center'
+                      ? 'center'
+                      : 'flex-start'
+                }
+              >
+                <Text bold={rowIndex === 0}>{renderInline(cell.tokens)}</Text>
+              </Box>
             ))}
           </Box>
         </Fragment>
@@ -181,7 +194,7 @@ function renderBlock(source: Token, width: number): ReactNode {
       return <Text>{token.tokens ? renderInline(token.tokens) : token.text}</Text>;
     case 'code':
       return (
-        <Box flexDirection='column'>
+        <Box flexDirection="column">
           {token.lang && <Text dimColor>{token.lang}</Text>}
           <Text>{token.text.replace(/\t/g, '    ')}</Text>
         </Box>
@@ -190,7 +203,7 @@ function renderBlock(source: Token, width: number): ReactNode {
       const inset = width >= 4 ? 2 : 0;
       return (
         <Box
-          flexDirection='column'
+          flexDirection="column"
           borderStyle={inset ? 'single' : undefined}
           borderTop={false}
           borderBottom={false}
@@ -203,18 +216,22 @@ function renderBlock(source: Token, width: number): ReactNode {
     }
     case 'list':
       return (
-        <Box flexDirection='column'>
+        <Box flexDirection="column">
           {token.items.map((item, index) => {
             const bullet = token.ordered ? `${Number(token.start) + index}. ` : '• ';
             const marker = bullet + (item.task ? (item.checked ? '[x] ' : '[ ] ') : '');
             const markerWidth = stringWidth(marker);
             const stacked = width - markerWidth < 2;
             return (
-              <Box key={index} flexDirection={stacked ? 'column' : 'row'} marginTop={token.loose && index > 0 ? 1 : 0}>
+              <Box
+                key={index}
+                flexDirection={stacked ? 'column' : 'row'}
+                marginTop={token.loose && index > 0 ? 1 : 0}
+              >
                 <Box width={stacked ? width : markerWidth} flexShrink={0}>
                   <Text>{marker}</Text>
                 </Box>
-                <Box flexDirection='column' width={stacked ? width : width - markerWidth}>
+                <Box flexDirection="column" width={stacked ? width : width - markerWidth}>
                   {renderBlocks(item.tokens, stacked ? width : width - markerWidth, !item.loose)}
                 </Box>
               </Box>
@@ -233,9 +250,15 @@ function renderBlock(source: Token, width: number): ReactNode {
 
 function renderBlocks(tokens: Token[], width: number, compact = false): ReactNode {
   return tokens
-    .filter((token) => token.type !== 'space' && token.type !== 'def' && token.type !== 'checkbox')
+    .filter(token => token.type !== 'space' && token.type !== 'def' && token.type !== 'checkbox')
     .map((token, index) => (
-      <Box key={index} flexDirection='column' width={width} flexShrink={0} marginTop={index > 0 && !compact ? 1 : 0}>
+      <Box
+        key={index}
+        flexDirection="column"
+        width={width}
+        flexShrink={0}
+        marginTop={index > 0 && !compact ? 1 : 0}
+      >
         {renderBlock(token, width)}
       </Box>
     ));
@@ -246,7 +269,7 @@ export const Markdown = memo(function Markdown({ text, width }: MarkdownProps) {
   const tokens = useMemo(() => {
     const parsed = parser.lexer(sanitizeTerminalText(text));
     // 数字字符实体可能在解析时生成控制字符，进入 Ink 前再次处理所有可显示字段。
-    parser.walkTokens(parsed, (token) => {
+    parser.walkTokens(parsed, token => {
       token.raw = sanitizeTerminalText(token.raw);
       if ('text' in token) token.text = sanitizeTerminalText(token.text);
       if ('href' in token) token.href = sanitizeTerminalText(token.href);
@@ -256,7 +279,7 @@ export const Markdown = memo(function Markdown({ text, width }: MarkdownProps) {
   }, [text]);
   const contentWidth = Math.max(1, width);
   return (
-    <Box flexDirection='column' width={contentWidth}>
+    <Box flexDirection="column" width={contentWidth}>
       {renderBlocks(tokens, contentWidth)}
     </Box>
   );

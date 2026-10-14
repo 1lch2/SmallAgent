@@ -4,6 +4,6 @@ import { stripVTControlCharacters } from 'node:util';
 export function sanitizeTerminalText(text: string): string {
   return stripVTControlCharacters(text.replace(/\r\n/g, '\n')).replace(
     /[\u0000-\u0008\u000b-\u001f\u007f-\u009f]/g,
-    (character) => `\\u${character.charCodeAt(0).toString(16).padStart(4, '0')}`,
+    character => `\\u${character.charCodeAt(0).toString(16).padStart(4, '0')}`
   );
 }

@@ -13,51 +13,46 @@ export interface CommandInputProps {
 }
 
 /** 带斜杠命令菜单的受控终端输入栏。 */
-export function CommandInput({
-  value,
-  onChange,
-  onSubmit,
-  commands,
-}: CommandInputProps) {
+export function CommandInput({ value, onChange, onSubmit, commands }: CommandInputProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [inputRevision, setInputRevision] = useState(0);
   const menuVisible = value.startsWith('/') && !/\s/.test(value);
-  const matchingCommands = commands.filter((command) => command.name.startsWith(value));
+  const matchingCommands = commands.filter(command => command.name.startsWith(value));
 
   function completeCommand() {
     const command = matchingCommands[selectedIndex];
     if (!command) return;
     onChange(`${command.name} `);
     // 重新挂载输入控件，让其内部光标跟随补全文本移动到末尾。
-    setInputRevision((revision) => revision + 1);
+    setInputRevision(revision => revision + 1);
     setSelectedIndex(0);
   }
 
   useInput(
     (_input, key) => {
       if (key.upArrow) {
-        setSelectedIndex((index) => (index + matchingCommands.length - 1) % matchingCommands.length);
+        setSelectedIndex(index => (index + matchingCommands.length - 1) % matchingCommands.length);
       } else if (key.downArrow) {
-        setSelectedIndex((index) => (index + 1) % matchingCommands.length);
+        setSelectedIndex(index => (index + 1) % matchingCommands.length);
       } else if (key.tab) {
         completeCommand();
       }
     },
-    { isActive: menuVisible && matchingCommands.length > 0 },
+    { isActive: menuVisible && matchingCommands.length > 0 }
   );
 
   return (
-    <Box flexDirection='column'>
-      <Box borderStyle='round' borderColor='gray' paddingX={1}>
-        <Text color='green'>{'> '}</Text>
+    <Box flexDirection="column">
+      <Box borderStyle="round" borderColor="gray" paddingX={1}>
+        <Text color="green">{'> '}</Text>
         <TextInput
           key={inputRevision}
           value={value}
-          onChange={(nextValue) => {
+          onChange={nextValue => {
             setSelectedIndex(0);
             onChange(nextValue);
           }}
-          onSubmit={(text) => {
+          onSubmit={text => {
             if (menuVisible) completeCommand();
             else if (!executeCommand(commands, text)) onSubmit(text);
             else onChange('');
@@ -66,7 +61,7 @@ export function CommandInput({
         />
       </Box>
       {menuVisible && (
-        <Box flexDirection='column' paddingX={2}>
+        <Box flexDirection="column" paddingX={2}>
           {matchingCommands.map((command, index) => (
             <Text key={command.name} color={index === selectedIndex ? 'cyan' : undefined}>
               <Text bold={index === selectedIndex}>
@@ -76,7 +71,9 @@ export function CommandInput({
               <Text dimColor={index !== selectedIndex}>{command.description}</Text>
             </Text>
           ))}
-          <Text dimColor>{matchingCommands.length > 0 ? '↑↓ 选择 · Tab / Enter 补全' : '无匹配命令'}</Text>
+          <Text dimColor>
+            {matchingCommands.length > 0 ? '↑↓ 选择 · Tab / Enter 补全' : '无匹配命令'}
+          </Text>
         </Box>
       )}
     </Box>

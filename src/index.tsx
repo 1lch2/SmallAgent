@@ -9,7 +9,7 @@ if (process.stdout.isTTY) {
 const app = render(
   <ProviderSession>
     <App />
-  </ProviderSession>,
+  </ProviderSession>
 );
 
 try {
@@ -19,8 +19,10 @@ try {
   process.stdin.pause();
   if (process.stdin.isTTY) process.stdin.setRawMode(false);
   // 最后一帧由 Ink 保留，清理完成并刷新输出后再交还终端。
-  await new Promise<void>((resolve) => {
-    process.stdout.write(process.stdout.isTTY ? '\u001B[2J\u001B[3J\u001B[H\u001B[?25h' : '', () => resolve());
+  await new Promise<void>(resolve => {
+    process.stdout.write(process.stdout.isTTY ? '\u001B[2J\u001B[3J\u001B[H\u001B[?25h' : '', () =>
+      resolve()
+    );
   });
 }
 

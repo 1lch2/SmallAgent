@@ -4,7 +4,12 @@ import { Markdown } from './Markdown';
 import { sanitizeTerminalText } from '../utils/terminal-text';
 
 function getFileName(args: unknown): string {
-  if (typeof args !== 'object' || args === null || !('path' in args) || typeof args.path !== 'string') {
+  if (
+    typeof args !== 'object' ||
+    args === null ||
+    !('path' in args) ||
+    typeof args.path !== 'string'
+  ) {
     return 'unknown';
   }
   return args.path.split(/[\\/]/).filter(Boolean).pop() || 'unknown';
@@ -30,22 +35,22 @@ export function Message({ entry, width }: MessageProps) {
   switch (entry.type) {
     case 'user':
       return (
-        <Box flexDirection='column'>
-          <Text color='green'>User</Text>
+        <Box flexDirection="column">
+          <Text color="green">User</Text>
           <Text>{entry.text}</Text>
         </Box>
       );
     case 'assistant_text_thinking':
       return (
         <Text>
-          <Text color='gray'>{'Thinking\n'}</Text>
+          <Text color="gray">{'Thinking\n'}</Text>
           <Text dimColor>{sanitizeTerminalText(entry.text)}</Text>
         </Text>
       );
     case 'assistant_text_response':
       return (
-        <Box flexDirection='column'>
-          <Text color='cyan'>Agent</Text>
+        <Box flexDirection="column">
+          <Text color="cyan">Agent</Text>
           <Markdown text={entry.text} width={width} />
         </Box>
       );
@@ -53,7 +58,7 @@ export function Message({ entry, width }: MessageProps) {
       if (entry.name === 'file_read' || entry.name === 'file_write') {
         const operation = entry.name === 'file_read' ? 'Read' : 'Write';
         return (
-          <Text color='green' backgroundColor='black'>
+          <Text color="green" backgroundColor="black">
             {`→ ${operation}: ${getFileName(entry.args)} `}
           </Text>
         );
@@ -66,22 +71,22 @@ export function Message({ entry, width }: MessageProps) {
           typeof entry.args.command === 'string'
             ? entry.args.command
             : '';
-        return <Text color='blue' backgroundColor='black'>{`$ ${command}`}</Text>;
+        return <Text color="blue" backgroundColor="black">{`$ ${command}`}</Text>;
       }
-      return <Text color='yellow'>{`→ ${entry.name}(${formatArgs(entry.args)})`}</Text>;
+      return <Text color="yellow">{`→ ${entry.name}(${formatArgs(entry.args)})`}</Text>;
     }
     case 'tool_result': {
       if (entry.name === 'file_read' || entry.name === 'file_write') {
         const operation = entry.name === 'file_read' ? 'Read' : 'Write';
         return (
-          <Text color='green' backgroundColor='black'>
+          <Text color="green" backgroundColor="black">
             {`→ ${operation}: ${getFileName(entry.args)} `}
           </Text>
         );
       }
-      return <Text color='gray'>{truncate(entry.text)}</Text>;
+      return <Text color="gray">{truncate(entry.text)}</Text>;
     }
     case 'error':
-      return <Text color='red'>{`⨂ ${entry.text}`}</Text>;
+      return <Text color="red">{`⨂ ${entry.text}`}</Text>;
   }
 }

@@ -6,15 +6,19 @@ const repositoryURL = `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REP
 const currentRef = `refs/tags/${tag}`;
 const releases = JSON.parse(readFileSync(releasesFile, 'utf8'))
   .flat()
-  .filter((release) => !release.draft && release.tag_name !== tag)
+  .filter(release => !release.draft && release.tag_name !== tag)
   .sort((a, b) => Date.parse(b.published_at) - Date.parse(a.published_at));
 
 // 只从当前版本历史中选择已发布的 Release，避免补发旧版本时选到未来版本。
 let previousTag;
 for (const release of releases) {
-  const result = spawnSync('git', ['merge-base', '--is-ancestor', `refs/tags/${release.tag_name}`, currentRef], {
-    encoding: 'utf8',
-  });
+  const result = spawnSync(
+    'git',
+    ['merge-base', '--is-ancestor', `refs/tags/${release.tag_name}`, currentRef],
+    {
+      encoding: 'utf8',
+    }
+  );
   if (result.error) throw result.error;
   if (result.status === 0) {
     previousTag = release.tag_name;
@@ -24,7 +28,9 @@ for (const release of releases) {
 }
 
 const range = previousTag ? `refs/tags/${previousTag}..${currentRef}` : currentRef;
-const log = execFileSync('git', ['log', '--reverse', '--format=%H%x09%s', range, '--'], { encoding: 'utf8' });
+const log = execFileSync('git', ['log', '--reverse', '--format=%H%x09%s', range, '--'], {
+  encoding: 'utf8',
+});
 const groups = { feat: [], fix: [] };
 for (const line of log.trim().split('\n')) {
   const separator = line.indexOf('\t');
@@ -35,7 +41,9 @@ for (const line of log.trim().split('\n')) {
   const match = /^(feat|fix)(?:\([^\r\n)]+\))?!?:\s+.+/i.exec(subject);
   if (!match) continue;
   const escaped = subject.replace(/[\\`*_{}\[\]<>]/g, '\\$&');
-  groups[match[1].toLowerCase()].push(`- ${escaped} ([${sha.slice(0, 7)}](${repositoryURL}/commit/${sha}))`);
+  groups[match[1].toLowerCase()].push(
+    `- ${escaped} ([${sha.slice(0, 7)}](${repositoryURL}/commit/${sha}))`
+  );
 }
 
 const sections = ['## 更新内容'];
@@ -49,7 +57,7 @@ if (!groups.feat.length && !groups.fix.length) sections.push('本次发布没有
 sections.push(
   previousTag
     ? `[完整变更](${repositoryURL}/compare/${encodeURIComponent(previousTag)}...${encodeURIComponent(tag)})`
-    : '首次发布，以上列出截至当前版本的全部 feat 和 fix 提交。',
+    : '首次发布，以上列出截至当前版本的全部 feat 和 fix 提交。'
 );
 writeFileSync(notesFile, `${sections.join('\n\n')}\n`);
 console.log(`Release notes: ${previousTag ?? '初始提交'} -> ${tag}`);

@@ -12,37 +12,151 @@ features:
     doc: docs/features/release.md
     entrypoints: [.github/workflows/release.yml, scripts/release-notes.mjs]
   - id: cli-startup
-    name: CLI 启动与本地构建
-    keywords: [启动, 配置, 无环境变量, npm, build, liberi-code]
+    name: CLI 启动、本地构建与开发检查
+    keywords:
+      [
+        启动,
+        配置,
+        无环境变量,
+        npm,
+        build,
+        liberi-code,
+        commitlint,
+        Conventional Commits,
+        Husky,
+        Prettier,
+        format,
+        Codex,
+        hook,
+      ]
     doc: docs/features/cli-startup.md
     entrypoints: [src/index.tsx, package.json, scripts/build.mjs]
   - id: agent-loop
     name: Agent 对话历史、工具循环与系统提示词
-    keywords: [Agent, send, ReAct, 对话, 上下文, 工具调用, AgentUpdate, 系统提示词, buildSystemPrompt]
+    keywords:
+      [Agent, send, ReAct, 对话, 上下文, 工具调用, AgentUpdate, 系统提示词, buildSystemPrompt]
     doc: docs/features/agent-loop.md
     entrypoints: [src/core/agent.ts, src/core/system-prompt.ts]
   - id: model-adapter
     name: OpenAI 兼容模型接口与 Token 用量
-    keywords: [OpenAILLM, LLM, Chat Completions, 模型, 非流式, token, TokenUsage, cached_tokens, 缓存命中, 协议转换]
+    keywords:
+      [
+        OpenAILLM,
+        LLM,
+        Chat Completions,
+        模型,
+        非流式,
+        token,
+        TokenUsage,
+        cached_tokens,
+        缓存命中,
+        协议转换,
+      ]
     doc: docs/features/model-adapter.md
     entrypoints: [src/openai-llm.ts, src/types.ts]
   - id: providers
     name: Provider 连接、模型选择、模型清单缓存与本地保存
-    keywords: [provider, ProviderList, ProviderSession, ModelList, List, model, 切换模型, 删除供应商, 移除配置, 双按D, 服务商, API Key, 模型列表, models, DeepSeek, MiniMax, GLM, MiMo, 小米, Kimi, OpenAI官方, Token Plan, Coding Plan, 自定义端点, 自动连接]
+    keywords:
+      [
+        provider,
+        ProviderList,
+        ProviderSession,
+        ModelList,
+        List,
+        model,
+        切换模型,
+        删除供应商,
+        移除配置,
+        双按D,
+        服务商,
+        API Key,
+        模型列表,
+        models,
+        DeepSeek,
+        MiniMax,
+        GLM,
+        MiMo,
+        小米,
+        Kimi,
+        OpenAI官方,
+        Token Plan,
+        Coding Plan,
+        自定义端点,
+        自动连接,
+      ]
     doc: docs/features/providers.md
     entrypoints: [src/providers/catalog.ts, src/providers/connect.ts, src/ui/ProviderList.tsx]
   - id: terminal-ui
     name: 终端输入、消息展示与布局
-    keywords: [Ink, React, TUI, App, Message, Markdown, marked, string-width, 表格, 输入, Thinking, think, 工具摘要, resize, 状态栏, 工具栏, Toolbar, 缓存命中率, 斜杠命令, slash, compact, model, quit, CommandInput]
+    keywords:
+      [
+        Ink,
+        React,
+        TUI,
+        App,
+        Message,
+        Markdown,
+        marked,
+        string-width,
+        表格,
+        输入,
+        Thinking,
+        think,
+        工具摘要,
+        resize,
+        状态栏,
+        工具栏,
+        Toolbar,
+        缓存命中率,
+        斜杠命令,
+        slash,
+        compact,
+        model,
+        quit,
+        CommandInput,
+      ]
     doc: docs/features/terminal-ui.md
     entrypoints: [src/ui/App.tsx, src/core/commands.ts, src/hook/useCommands.ts]
   - id: file-tools
     name: 文件读写与工作目录路径权限
-    keywords: [file_read, file_write, fileRead, fileWrite, usePathValidation, 文件, 权限, realpath, 工作目录]
+    keywords:
+      [
+        file_read,
+        file_write,
+        fileRead,
+        fileWrite,
+        usePathValidation,
+        文件,
+        权限,
+        realpath,
+        工作目录,
+      ]
     doc: docs/features/file-tools.md
     entrypoints: [src/tools/file-read.ts, src/tools/file-write.ts, src/hook/usePathValidation.ts]
   - id: terminal-tool
     name: Shell 命令执行与 PowerShell、Bash 路径检查
-    keywords: [terminal_run, terminalRun, 命令, Shell, PowerShell, CMD, bash, stdout, stderr, checkTerminalCommandPermission, getBashPaths, 路径权限, 通配符, 重定向, 符号链接]
+    keywords:
+      [
+        terminal_run,
+        terminalRun,
+        命令,
+        Shell,
+        PowerShell,
+        CMD,
+        bash,
+        stdout,
+        stderr,
+        checkTerminalCommandPermission,
+        getBashPaths,
+        路径权限,
+        通配符,
+        重定向,
+        符号链接,
+      ]
     doc: docs/features/terminal-tool.md
-    entrypoints: [src/tools/terminal-run.ts, src/utils/command-permission/terminal-permission.ts, src/utils/shell.ts]
+    entrypoints:
+      [
+        src/tools/terminal-run.ts,
+        src/utils/command-permission/terminal-permission.ts,
+        src/utils/shell.ts,
+      ]

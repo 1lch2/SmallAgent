@@ -15,23 +15,37 @@ export async function terminalRun(args: Record<string, unknown>, cwd: string): P
   const hasPermission = await checkTerminalCommandPermission(command, cwd, shell);
 
   if (!hasPermission) {
-    throw new Error('权限不足：命令含有超出工作目录的路径，或无法静态确认路径的 Shell 语法。请使用直接的路径参数，避免动态路径和切换目录。');
+    throw new Error(
+      '权限不足：命令含有超出工作目录的路径，或无法静态确认路径的 Shell 语法。请使用直接的路径参数，避免动态路径和切换目录。'
+    );
   }
 
   const options = { cwd, maxBuffer: 10 * 1024 * 1024, windowsHide: true };
-  const { stdout, stderr } = shell.type === 'powershell'
-    ? await execFileAsync(shell.path, [
-      '-NoLogo', '-NoProfile', '-NonInteractive', '-Command',
-      `[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new();\n${command}`,
-    ], options)
-    : shell.type === 'bash'
-      ? await execFileAsync(shell.path, ['--noprofile', '--norc', '-p', '-c', command], { ...options, env: getBashEnvironment() })
-      : await execAsync(command, { ...options, shell: shell.path });
+  const { stdout, stderr } =
+    shell.type === 'powershell'
+      ? await execFileAsync(
+          shell.path,
+          [
+            '-NoLogo',
+            '-NoProfile',
+            '-NonInteractive',
+            '-Command',
+            `[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new();\n${command}`,
+          ],
+          options
+        )
+      : shell.type === 'bash'
+        ? await execFileAsync(shell.path, ['--noprofile', '--norc', '-p', '-c', command], {
+            ...options,
+            env: getBashEnvironment(),
+          })
+        : await execAsync(command, { ...options, shell: shell.path });
   const out = (stdout ?? '').trim();
   const err = (stderr ?? '').trim();
-  return [out && `STDOUT:\n${out}`, err && `STDERR:\n${err}`]
-    .filter(Boolean)
-    .join('\n\n') || '(no output)';
+  return (
+    [out && `STDOUT:\n${out}`, err && `STDERR:\n${err}`].filter(Boolean).join('\n\n') ||
+    '(no output)'
+  );
 }
 
 /** 注册终端执行工具及其模型参数定义。 */
