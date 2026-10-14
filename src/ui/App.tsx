@@ -10,6 +10,8 @@ import type { TokenUsage } from '../types';
 import { useProviderSession } from '../hook/useProviderSession';
 import { ProviderList } from './ProviderList';
 import { ModelList } from './ModelList';
+import { ConfigList } from './ConfigList';
+import { PermissionList } from './PermissionList';
 import { useCommands } from '../hook/useCommands';
 
 /** 管理终端输入和消息列表，并展示 Agent 的输出事件。 */
@@ -88,6 +90,9 @@ export function App() {
 
   if (session.view === 'providers') return <ProviderList busy={busy} />;
   if (session.view === 'models') return <ModelList busy={busy} />;
+  if (session.view === 'config') return <ConfigList />;
+  if (session.view === 'subagent-models') return <ModelList busy={busy} target="subagent" />;
+  if (session.view === 'permissions') return <PermissionList busy={busy} />;
 
   return (
     // 为 Ink 重绘后的换行保留一行；仅设置最小高度，让长消息自然延伸。
@@ -129,7 +134,11 @@ export function App() {
         />
         {session.loadingConfig && <Text dimColor>正在读取本地配置...</Text>}
         {session.error && <Text color="yellow">{session.error} 使用 /provider 重新连接。</Text>}
-        <Toolbar model={connection?.options.model} usage={tokenUsage} />
+        <Toolbar
+          model={connection?.options.model}
+          permission={session.settings.permission}
+          usage={tokenUsage}
+        />
       </Box>
     </Box>
   );

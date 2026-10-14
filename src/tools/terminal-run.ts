@@ -4,17 +4,20 @@ import { checkTerminalCommandPermission } from '../utils/command-permission/term
 import { getBashEnvironment } from '../utils/command-permission/bash-paths';
 import type { ToolDefinition } from '../types';
 import { getCurrentShellInfo } from '../utils/shell';
+import type { PermissionMode } from '../core/settings';
 
 const execAsync = promisify(exec);
 const execFileAsync = promisify(execFile);
 
-/** 在指定工作目录中执行命令；PowerShell 和 Bash 执行命令路径检查。 */
-export async function terminalRun(args: Record<string, unknown>, cwd: string): Promise<string> {
+/** 在指定工作目录执行命令；工作区模式下执行现有 Shell 路径检查。 */
+export async function terminalRun(
+  args: Record<string, unknown>,
+  cwd: string,
+  permission: PermissionMode = 'workspace'
+): Promise<string> {
   const command = String(args.command);
   const shell = getCurrentShellInfo();
-  const hasPermission = await checkTerminalCommandPermission(command, cwd, shell);
-
-  if (!hasPermission) {
+  if (permission === 'workspace' && !(await checkTerminalCommandPermission(command, cwd, shell))) {
     throw new Error(
       '权限不足：命令含有超出工作目录的路径，或无法静态确认路径的 Shell 语法。请使用直接的路径参数，避免动态路径和切换目录。'
     );
@@ -53,7 +56,7 @@ export const terminalRunTool = {
   definition: {
     name: 'terminal_run',
     description:
-      'Run a shell command from the working directory. PowerShell and Bash commands undergo path validation against this directory; CMD and sh skip this check. Use direct literal path arguments; dynamic paths, assignments, directory changes and nested shells are rejected. Returns combined stdout and stderr.',
+      'Run a shell command from the working directory. In workspace mode, PowerShell and Bash validate paths and reject dynamic paths, assignments, directory changes and nested shells; CMD and sh skip this check. Full-access mode skips path validation. Returns combined stdout and stderr.',
     parameters: {
       type: 'object',
       properties: {

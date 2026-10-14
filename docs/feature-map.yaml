@@ -1,7 +1,7 @@
 path_base: repository-root
 scope: >-
   覆盖当前 CLI 的启动与本地构建、Agent 对话与工具循环、模型接口适配、
-  Provider 连接、终端交互、文件读写、命令执行及 GitHub Release 发布主链路。内容基于源码核对，用于定位实现，
+  Provider 连接、Agent 设置、终端交互、文件读写、命令执行及 GitHub Release 发布主链路。内容基于源码核对，用于定位实现，
   不代表真实模型端点、终端或跨平台行为已经运行验收。
 not_yet_mapped:
   - VSCode 调试配置
@@ -98,6 +98,24 @@ features:
       ]
     doc: docs/features/providers.md
     entrypoints: [src/providers/catalog.ts, src/providers/connect.ts, src/ui/ProviderList.tsx]
+  - id: settings
+    name: Agent 设置、权限模式、统一配置文件与 subagent 模型占位
+    keywords:
+      [
+        config,
+        ConfigList,
+        PermissionList,
+        settings.json,
+        subagent model,
+        subagentModel,
+        permission,
+        工作区写入,
+        完全许可,
+        设置,
+        全局配置,
+      ]
+    doc: docs/features/settings.md
+    entrypoints: [src/core/settings.ts, src/ui/ConfigList.tsx, src/ui/List.tsx]
   - id: terminal-ui
     name: 终端输入、消息展示与布局
     keywords:

@@ -2,7 +2,8 @@ import OpenAI from 'openai';
 import { OpenAILLM } from '../openai-llm';
 import type { ProviderDefinition } from './catalog';
 import { saveModelCatalog, saveProviderConnection, providerStoragePaths } from './storage';
-import type { ModelCatalog, ProviderStoragePaths, SavedConnection } from './storage';
+import type { ModelCatalog, ProviderStoragePaths } from './storage';
+import type { SavedConnection } from '../core/settings';
 
 /** 本地选项初始化或联网校验后创建的模型连接。 */
 export interface ProviderConnection {

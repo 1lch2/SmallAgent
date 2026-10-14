@@ -14,7 +14,8 @@
 - [src/ui/List.tsx](../../src/ui/List.tsx)：Provider 和模型页面共用的受控列表；接收标识、显示文本、选中位置及回调，负责上下键循环导航和回车确认，不依赖服务商会话。
 - [src/ui/ModelList.tsx](../../src/ui/ModelList.tsx)：读取当前 Provider 的模型清单，默认定位并标记当前模型；确认保存后返回聊天，Esc 取消。加载或保存时禁用选择，当前对话结束前禁止切换；卸载后忽略未完成的清单读取结果。
 - [src/providers/connect.ts](../../src/providers/connect.ts)：`fetchModelCatalog` 使用 SDK `models.list()` 或既有官方文档备用流程获取模型。主动通过 `/provider` 连接时，`connectProvider` 获取清单、选首个模型并发送最小 Chat Completions 请求校验，成功后保存；启动不调用这一流程。
-- [src/providers/storage.ts](../../src/providers/storage.ts)：读写配置和临时模型清单，`saveProviderSettings` 原子保存完整配置，连接保存与配置删除共用该入口。写入通过临时文件重命名完成。文件以 `0600` 模式创建；Windows 文件访问受当前用户目录的 ACL 控制。
+- [src/providers/storage.ts](../../src/providers/storage.ts)：保存连接和临时模型清单；连接保存读取统一设置并保留其他 Agent 设置。模型缓存与统一配置通过 `writeJSON` 写临时文件后重命名。
+- [src/core/settings.ts](../../src/core/settings.ts)：`loadSettings`、`saveSettings` 读写统一配置，连接保存与配置删除共用该入口。文件以 `0600` 模式创建；Windows 文件访问受当前用户目录的 ACL 控制。Agent 设置见[设置配置](settings.md)。
 - [src/ui/App.tsx](../../src/ui/App.tsx)：根据会话展示聊天、`ProviderList` 或 `ModelList`；未连接时禁止发送模型请求，当前回合结束后才能切换连接或模型。切换使用 `Agent.setLLM` 保留历史，重置用量统计。
 
 ## 删除供应商配置
@@ -57,7 +58,7 @@ GLM 官方 OpenAPI 没有公开模型列表定义。仅在标准接口返回 404
 
 ## 保存与缓存边界
 
-- `~/.liberi/providers.json` 保存服务商 ID、端点、选中模型、API Key，以及当前选中的服务商。成功连接、确认新模型或删除配置时更新；删除仅移除目标配置，并更新自动选中的供应商与模型。Key 按用户要求保存在本机配置中。
+- `~/.liberi/settings.json` 统一保存服务商 ID、端点、选中模型、API Key、当前选中的服务商和 Agent 设置。成功连接、确认新模型或删除配置时更新，并保留其他设置；删除仅移除目标配置，并更新自动选中的供应商与模型。Key 按用户要求保存在本机配置中。新文件缺失时读取旧 `providers.json`，启动不写入；后续保存统一写入 `settings.json`，保留旧文件。
 - `os.tmpdir()/liberi-code/models/<连接摘要>.json` 保存模型 ID 清单、来源、端点和更新时间，不保存 API Key。摘要包含连接凭据以隔离不同账号的缓存。主动连接时重新获取并更新清单；`loadModelCatalog` 提供本地读取入口，启动不依赖缓存是否存在。
 - 首个模型必须通过 Chat Completions 校验；接口失败、列表为空、模型无权限或保存失败均显示连接失败，不改变当前已连接的模型。
 - 校验请求的输出限制为 16 token，仅确认调用成功；实际聊天使用现有适配器。错误提示不转发服务端原始正文，避免服务端回显凭据。

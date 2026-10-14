@@ -3,10 +3,15 @@ import type { ToolDefinition } from '../types';
 import { fileReadTool } from './file-read';
 import { fileWriteTool } from './file-write';
 import { terminalRunTool } from './terminal-run';
+import type { PermissionMode } from '../core/settings';
 
 type ToolHandler = {
   definition: ToolDefinition;
-  execute: (args: Record<string, unknown>, cwd: string) => Promise<string>;
+  execute: (
+    args: Record<string, unknown>,
+    cwd: string,
+    permission: PermissionMode
+  ) => Promise<string>;
 };
 
 const registeredTools: ToolHandler[] = [fileReadTool, fileWriteTool, terminalRunTool];
@@ -24,13 +29,14 @@ export const tools: ToolDefinition[] = Array.from(
 export async function executeTool(
   name: string,
   args: Record<string, unknown>,
-  cwd: string
+  cwd: string,
+  permission: PermissionMode = 'workspace'
 ): Promise<string> {
   const tool = toolRegistry.get(name);
   if (!tool) return `Unknown tool: ${name}`;
 
   try {
-    return await tool.execute(args, cwd);
+    return await tool.execute(args, cwd, permission);
   } catch (err) {
     return `Error: ${errorMessage(err)}`;
   }

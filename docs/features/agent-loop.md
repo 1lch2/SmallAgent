@@ -18,6 +18,8 @@
 
 工具参数的 JSON 解析失败时使用空对象。模型请求失败时推送 `error` 事件并结束本轮；工具失败文本仍进入历史并反馈模型。完整历史由 Agent 实例维护，UI 维护展示条目，两者职责不同。
 
+Agent 初始化时接收权限模式，默认 `workspace`；每次工具执行向分派器传递当前模式。`setPermission` 在回合结束后更新模式及系统提示词的 `<permission>` 标记，保留历史和已读取的 AGENTS.md 内容。配置入口见[设置配置](settings.md)。
+
 模型调用见[模型适配](model-adapter.md)，文本拆分与事件展示见[终端交互](terminal-ui.md)，具体工具见[文件读写](file-tools.md)及[命令执行](terminal-tool.md)。
 
 ## 验证入口与待补充范围

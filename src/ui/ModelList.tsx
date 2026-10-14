@@ -5,13 +5,14 @@ import { useProviderSession } from '../hook/useProviderSession';
 import { providers } from '../providers/catalog';
 import { List } from './List';
 
-/** 模型选择页面是否需要等待当前对话结束。 */
+/** 模型选择页面的忙碌状态与设置目标。 */
 export interface ModelListProps {
   busy: boolean;
+  target?: 'agent' | 'subagent';
 }
 
-/** 展示当前服务商的模型，保存选择后返回聊天界面。 */
-export function ModelList({ busy }: ModelListProps) {
+/** 展示当前服务商的模型，保存后返回聊天或设置界面。 */
+export function ModelList({ busy, target = 'agent' }: ModelListProps) {
   const session = useProviderSession();
   const { connection, loadModels, loadingConfig } = session;
   const [models, setModels] = useState<string[]>([]);
@@ -21,6 +22,8 @@ export function ModelList({ busy }: ModelListProps) {
   const [error, setError] = useState<string>();
   const blocked = busy || loadingConfig || loading || saving;
   const provider = providers.find(item => item.id === connection?.options.providerId);
+  const currentModel =
+    target === 'subagent' ? session.settings.subagentModel : connection?.options.model;
 
   useEffect(() => {
     if (loadingConfig) return;
@@ -31,7 +34,7 @@ export function ModelList({ busy }: ModelListProps) {
       .then(catalog => {
         if (cancelled) return;
         setModels(catalog.models);
-        setSelectedIndex(Math.max(0, catalog.models.indexOf(connection!.options.model)));
+        setSelectedIndex(Math.max(0, catalog.models.indexOf(currentModel ?? '')));
       })
       .catch((err: Error) => {
         if (!cancelled) setError(err.message);
@@ -42,10 +45,13 @@ export function ModelList({ busy }: ModelListProps) {
     return () => {
       cancelled = true;
     };
-  }, [loadModels, connection, loadingConfig]);
+  }, [loadModels, currentModel, loadingConfig]);
 
   useInput((_input, key) => {
-    if (key.escape && !saving) session.closeSelection();
+    if (key.escape && !saving) {
+      if (target === 'subagent') session.openConfig();
+      else session.closeSelection();
+    }
   });
 
   async function select(model: string) {
@@ -53,7 +59,8 @@ export function ModelList({ busy }: ModelListProps) {
     setSaving(true);
     setError(undefined);
     try {
-      await session.selectModel(model);
+      if (target === 'subagent') await session.selectSubagentModel(model);
+      else await session.selectModel(model);
     } catch (err) {
       setError(err instanceof Error ? err.message : '模型切换失败。');
     } finally {
@@ -63,12 +70,14 @@ export function ModelList({ busy }: ModelListProps) {
 
   return (
     <Box flexDirection="column" paddingX={2} paddingY={1}>
-      <Text bold>选择模型{provider ? ` · ${provider.name}` : ''}</Text>
+      <Text bold>
+        选择{target === 'subagent' ? ' subagent ' : ''}模型{provider ? ` · ${provider.name}` : ''}
+      </Text>
       <Text dimColor>↑↓ 选择 · Enter 确认 · Esc 返回</Text>
       <List
         items={models.map(model => ({
           id: model,
-          label: `${model}${model === connection?.options.model ? '（当前）' : ''}`,
+          label: `${model}${model === currentModel ? '（当前）' : ''}`,
         }))}
         selectedIndex={selectedIndex}
         onChange={setSelectedIndex}

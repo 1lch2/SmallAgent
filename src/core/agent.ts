@@ -36,11 +36,13 @@ import { executeTool, tools } from '../tools';
 import { errorMessage } from '../utils/error';
 import { splitAssistantText } from '../utils/assistant-text';
 import { buildSystemPrompt } from './prompt';
+import type { PermissionMode } from './settings';
 
-/** 初始化 Agent 所需的模型与工作目录。 */
+/** 初始化 Agent 所需的模型、工作目录与权限模式。 */
 export interface AgentOptions {
   llm: LLM;
   cwd: string;
+  permission?: PermissionMode;
 }
 
 /** 描述 Agent 按处理顺序推送给界面的更新事件。 */
@@ -62,21 +64,33 @@ export type AgentUpdate =
 export class Agent {
   private llm: LLM;
   private cwd: string;
+  private permission: PermissionMode;
   private history: Message[] = [];
 
   /** 创建 Agent，并初始化包含工作目录的系统提示词。 */
   constructor(opts: AgentOptions) {
     this.llm = opts.llm;
     this.cwd = opts.cwd;
+    this.permission = opts.permission ?? 'workspace';
     this.history.push({
       role: 'system',
-      content: buildSystemPrompt(this.cwd),
+      content: buildSystemPrompt(this.cwd, this.permission),
     });
   }
 
   /** 切换模型连接并保留当前对话历史；应在当前回合结束后调用。 */
   setLLM(llm: LLM): void {
     this.llm = llm;
+  }
+
+  /** 切换工具权限并同步系统提示词；应在当前回合结束后调用。 */
+  setPermission(permission: PermissionMode): void {
+    const systemMessage = this.history[0]!;
+    systemMessage.content = systemMessage.content.replace(
+      `<permission>${this.permission}</permission>`,
+      `<permission>${permission}</permission>`
+    );
+    this.permission = permission;
   }
 
   /** 发送用户输入，并按处理过程推送 Agent 更新事件。 */
@@ -133,7 +147,7 @@ export class Agent {
           callId: call.id,
         });
 
-        const output = await executeTool(call.name, parsed, this.cwd);
+        const output = await executeTool(call.name, parsed, this.cwd, this.permission);
 
         onUpdate({ kind: 'tool_result', callId: call.id, name: call.name, args: parsed, output });
         this.history.push({

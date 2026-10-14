@@ -17,6 +17,8 @@
 
 `executeTool` → `terminalRun` → `checkTerminalCommandPermission` → `getPowerShellPaths` / `getBashPaths` → `execFile` / `exec`。工具注册及异常转换由[公共分派器](agent-loop.md)负责。
 
+上述路径检查用于默认的 `workspace` 权限模式；`full-access` 跳过 `checkTerminalCommandPermission`，沿用同一命令执行入口和 Shell 启动选项。配置入口见[设置配置](settings.md)。本次通过 Agent 工具循环验证了 PowerShell 目录外读取在工作区模式下拒绝、完全许可模式下执行成功；新增模式未单独执行其他 Shell 验收。
+
 PowerShell 支持常量路径、参数缩写及冒号形式、路径数组、通配符、重定向、常见读写和遍历 Cmdlet。字符串内容参数不按路径处理。变量路径、动态表达式、隐式管道路径、赋值、切换目录、动态命令名、方法调用及嵌套 Shell 等不能可靠静态确认的形式被拒绝；这也会拒绝部分合法的动态命令，应改写成直接的路径参数。解析和执行均不加载 profile，执行输出使用 UTF-8。
 
 Bash 支持常量及引号路径、转义、通配符、`;` / `&&` / `||`、管道、文件重定向和文件描述符复制。识别 `cat`、`ls`、`head`、`tail`、`grep`、`rg`、`find`、`cp`、`mv`、`rm`、`sort`、`tee` 等常用命令的路径、文本和数值参数；普通 `echo` / `printf` 文本不误判为路径，未引用的通配符展开仍检查路径。拒绝变量、命令/进程替换、赋值、切换目录、嵌套 Shell、后台任务、控制结构、here-doc、花括号展开及无法识别的关键参数形式。跟随递归链接、`find -exec`、`xargs`、`sed` / `awk` 脚本等间接访问暂不支持；这会拒绝部分合法 Bash 命令。Bash 检查不依赖额外解析包，也不执行待审核命令。

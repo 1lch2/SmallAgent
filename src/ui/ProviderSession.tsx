@@ -1,34 +1,39 @@
 import { createContext, useCallback, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Agent } from '../core/agent';
+import { loadSettings, saveSettings } from '../core/settings';
+import type { PermissionMode, Settings } from '../core/settings';
 import type { ProviderDefinition } from '../providers/catalog';
 import { providers } from '../providers/catalog';
 import { connectProvider, fetchModelCatalog } from '../providers/connect';
 import type { ProviderConnection } from '../providers/connect';
 import {
   loadModelCatalog,
-  loadProviderSettings,
   providerStoragePaths,
   saveModelCatalog,
   saveProviderConnection,
-  saveProviderSettings,
 } from '../providers/storage';
-import type { ModelCatalog, ProviderSettings, ProviderStoragePaths } from '../providers/storage';
+import type { ModelCatalog, ProviderStoragePaths } from '../providers/storage';
 import { OpenAILLM } from '../openai-llm';
 
 /** 连接、选项和页面状态的共享边界。 */
 export interface ProviderSessionState {
   connection?: ProviderConnection;
   agent?: Agent;
-  settings: ProviderSettings;
-  view: 'chat' | 'providers' | 'models';
+  settings: Settings;
+  view: 'chat' | 'providers' | 'models' | 'config' | 'subagent-models' | 'permissions';
   loadingConfig: boolean;
   error?: string;
   openProviders: () => void;
   openModels: () => void;
+  openConfig: () => void;
+  openSubagentModels: () => void;
+  openPermissions: () => void;
   closeSelection: () => void;
   loadModels: () => Promise<ModelCatalog>;
   selectModel: (model: string) => Promise<void>;
+  selectSubagentModel: (model: string) => Promise<void>;
+  selectPermission: (permission: PermissionMode) => Promise<void>;
   removeProvider: (providerId: string) => Promise<void>;
   connect: (provider: ProviderDefinition, apiKey: string, baseURL?: string) => Promise<void>;
 }
@@ -48,15 +53,15 @@ export function ProviderSession({
   storagePaths = providerStoragePaths,
 }: ProviderSessionProps) {
   const [connection, setConnection] = useState<ProviderConnection>();
-  const [settings, setSettings] = useState<ProviderSettings>({ connections: [] });
+  const [settings, setSettings] = useState<Settings>({ connections: [], permission: 'workspace' });
   const [view, setView] = useState<ProviderSessionState['view']>('chat');
   const [loadingConfig, setLoadingConfig] = useState(true);
   const [error, setError] = useState<string>();
   const agentRef = useRef<Agent>();
 
-  function activate(next: ProviderConnection) {
+  function activate(next: ProviderConnection, permission = settings.permission) {
     if (agentRef.current) agentRef.current.setLLM(next.llm);
-    else agentRef.current = new Agent({ llm: next.llm, cwd: process.cwd() });
+    else agentRef.current = new Agent({ llm: next.llm, cwd: process.cwd(), permission });
     setConnection(next);
   }
 
@@ -64,21 +69,24 @@ export function ProviderSession({
     let cancelled = false;
     async function initialize() {
       try {
-        const saved = await loadProviderSettings(storagePaths);
+        const saved = await loadSettings(storagePaths.configFile);
         if (cancelled) return;
         setSettings(saved);
         const selected = saved.connections.find(
           item => item.providerId === saved.selectedProviderId
         );
         if (selected) {
-          activate({
-            options: selected,
-            llm: new OpenAILLM({
-              apiKey: selected.apiKey,
-              baseURL: selected.baseURL,
-              model: selected.model,
-            }),
-          });
+          activate(
+            {
+              options: selected,
+              llm: new OpenAILLM({
+                apiKey: selected.apiKey,
+                baseURL: selected.baseURL,
+                model: selected.model,
+              }),
+            },
+            saved.permission
+          );
         }
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : '本地配置读取失败。');
@@ -96,6 +104,7 @@ export function ProviderSession({
     const next = await connectProvider(provider, apiKey, baseURL, storagePaths);
     activate(next);
     setSettings(previous => ({
+      ...previous,
       selectedProviderId: provider.id,
       connections: [
         ...previous.connections.filter(item => item.providerId !== provider.id),
@@ -146,7 +155,7 @@ export function ProviderSession({
   }
 
   async function removeProvider(providerId: string) {
-    const saved = await loadProviderSettings(storagePaths);
+    const saved = await loadSettings(storagePaths.configFile);
     if (!saved.connections.some(item => item.providerId === providerId)) return;
     const remaining = saved.connections.filter(item => item.providerId !== providerId);
     const provider = providers.find(item =>
@@ -164,14 +173,15 @@ export function ProviderSession({
       const selected = { ...options, model: catalog.models[0]! };
       next = { options: selected, catalog, llm: new OpenAILLM(selected) };
     }
-    const updated: ProviderSettings = {
+    const updated: Settings = {
+      ...saved,
       selectedProviderId: next?.options.providerId,
       connections: remaining.map(item =>
         item.providerId === next?.options.providerId ? next.options : item
       ),
     };
     try {
-      await saveProviderSettings(updated, storagePaths);
+      await saveSettings(updated, storagePaths.configFile);
     } catch {
       throw new Error('供应商配置删除失败，请检查本地配置文件。');
     }
@@ -183,6 +193,23 @@ export function ProviderSession({
       setConnection(undefined);
       setView('chat');
     }
+  }
+
+  async function selectSubagentModel(model: string) {
+    const saved = await loadSettings(storagePaths.configFile);
+    const updated = { ...saved, subagentModel: model };
+    await saveSettings(updated, storagePaths.configFile);
+    setSettings(updated);
+    setView('config');
+  }
+
+  async function selectPermission(permission: PermissionMode) {
+    const saved = await loadSettings(storagePaths.configFile);
+    const updated = { ...saved, permission };
+    await saveSettings(updated, storagePaths.configFile);
+    agentRef.current?.setPermission(permission);
+    setSettings(updated);
+    setView('config');
   }
 
   return (
@@ -197,9 +224,14 @@ export function ProviderSession({
         connect,
         loadModels,
         selectModel,
+        selectSubagentModel,
+        selectPermission,
         removeProvider,
         openProviders: () => setView('providers'),
         openModels: () => setView('models'),
+        openConfig: () => setView('config'),
+        openSubagentModels: () => setView('subagent-models'),
+        openPermissions: () => setView('permissions'),
         closeSelection: () => setView('chat'),
       }}
     >
