@@ -63,7 +63,11 @@ jobs:
             exit 0
           fi
 
+          gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/releases?per_page=100" \
+            > "$RUNNER_TEMP/releases.json"
+          node scripts/release-notes.mjs "$tag" "$RUNNER_TEMP/releases.json" "$RUNNER_TEMP/release-notes.md"
+
           gh release create "$tag" "$RUNNER_TEMP"/release/*.tgz \
             --title "$tag" \
             --target "$GITHUB_SHA" \
-            --generate-notes
+            --notes-file "$RUNNER_TEMP/release-notes.md"

@@ -19,4 +19,4 @@
 
 ## 验证入口与待补充范围
 
-现有命令为 `npm start`、`npm run typecheck` 和 `npm run build`；本专题没有对应的自动化测试入口。发布流程、安装包分发与编辑器调试配置未纳入本专题。
+现有命令为 `npm start`、`npm run typecheck` 和 `npm run build`；本专题没有对应的自动化测试入口。发布流程及安装包分发见[GitHub Actions 发布](release.md)，编辑器调试配置未纳入本专题。
