@@ -19,7 +19,7 @@
 
 工具参数的 JSON 解析失败时使用空对象。模型请求失败时推送 `error` 事件并结束本轮；工具失败文本仍进入历史并反馈模型。完整历史由 Agent 实例维护，UI 维护展示条目，两者职责不同。
 
-Agent 初始化时接收权限模式，默认 `workspace-write`；每次工具执行向分派器传递当前模式。`setPermission` 在回合结束后更新模式及系统提示词的 `<permission>` 标记，保留历史和已读取的 AGENTS.md 内容。配置入口见[设置配置](settings.md)。
+Agent 初始化时接收权限模式，默认 `workspace-write`；每次工具执行向分派器传递当前模式。回合结束后可更新 `Agent.permission`，不修改系统提示词或历史；系统提示词不包含权限模式及其说明。配置入口见[设置配置](settings.md)。
 
 Skill 元数据在 Agent 初始化时加载一次并注入 `<skills>`，只包含 `name`、`description`、`path`，不注入 Markdown 正文；使用指引要求模型先用 `file_read` 读取对应的完整 SKILL.md。
 

@@ -211,7 +211,7 @@ export function ProviderSession({ children, paths = STORAGE_PATHS }: ProviderSes
     const saved = await loadSettings(paths.configFile);
     const updated = { ...saved, permission };
     await saveSettings(updated, paths.configFile);
-    agentRef.current?.setPermission(permission);
+    if (agentRef.current) agentRef.current.permission = permission;
     setSettings(updated);
     setView('config');
   }

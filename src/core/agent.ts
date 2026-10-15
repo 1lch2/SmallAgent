@@ -65,7 +65,8 @@ export type AgentUpdate =
 export class Agent {
   private llm: LLM;
   private cwd: string;
-  private permission: PermissionMode;
+  /** 当前工具执行权限；应在当前回合结束后更新。 */
+  permission: PermissionMode;
   private skillPaths: string[];
   private history: Message[] = [];
 
@@ -78,23 +79,13 @@ export class Agent {
     this.skillPaths = skills.map(skill => skill.path);
     this.history.push({
       role: 'system',
-      content: buildSystemPrompt(this.cwd, this.permission, skills),
+      content: buildSystemPrompt(this.cwd, skills),
     });
   }
 
   /** 切换模型连接并保留当前对话历史；应在当前回合结束后调用。 */
   setLLM(llm: LLM): void {
     this.llm = llm;
-  }
-
-  /** 切换工具权限并同步系统提示词；应在当前回合结束后调用。 */
-  setPermission(permission: PermissionMode): void {
-    const systemMessage = this.history[0]!;
-    systemMessage.content = systemMessage.content.replace(
-      `<permission>${this.permission}</permission>`,
-      `<permission>${permission}</permission>`
-    );
-    this.permission = permission;
   }
 
   /** 发送用户输入，并按处理过程推送 Agent 更新事件。 */
