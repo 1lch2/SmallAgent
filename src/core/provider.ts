@@ -128,7 +128,7 @@ export async function fetchModelCatalog(
     }
   }
   if (!models.length) throw new Error('服务商未返回可用模型。');
-  return { models, source, updatedAt: new Date().toISOString() };
+  return { models, source };
 }
 
 /** 查询模型列表并验证首个模型，返回连接供会话层保存和激活。 */

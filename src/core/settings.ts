@@ -92,26 +92,37 @@ export async function saveSettings(settings: Settings, file = SETTINGS_FILE): Pr
   await writeJSON(file, settings);
 }
 
-/** 持久配置与临时模型缓存的位置。 */
+/** 持久配置与模型清单缓存文件的位置。 */
 export interface StoragePaths {
   configFile: string;
-  cacheDirectory: string;
+  modelsFile: string;
 }
 
 /** 模型清单缓存，保留厂商返回顺序及数据来源。 */
 export interface ModelCatalog {
   models: string[];
   source: 'api' | 'documentation';
-  updatedAt: string;
+}
+
+/** 单个连接的模型清单缓存条目，连同识别连接所需的身份信息。 */
+interface ModelCacheEntry {
+  providerId: string;
+  baseURL: string;
+  catalog: ModelCatalog;
+}
+
+/** 容纳所有连接模型清单的缓存文件内容。 */
+interface ModelCatalogFile {
+  entries: Record<string, ModelCacheEntry>;
 }
 
 /** 用户目录中放置临时产物的统一位置。 */
 export const TMP_DIRECTORY = join(USER_DATA_DIRECTORY, 'tmp');
 
-/** 默认配置位于用户目录，模型缓存与网页临时文件位于用户目录下的临时目录。 */
+/** 默认配置位于用户目录，模型清单缓存与网页临时文件位于用户目录下的临时目录。 */
 export const STORAGE_PATHS: StoragePaths = {
   configFile: SETTINGS_FILE,
-  cacheDirectory: join(TMP_DIRECTORY, 'models'),
+  modelsFile: join(TMP_DIRECTORY, 'model-catalog.json'),
 };
 
 /** 保存连接选项并选中该服务商，不覆盖其他服务商的选项。 */
@@ -133,47 +144,64 @@ export async function saveProviderConnection(
   );
 }
 
-function modelCacheFile(
-  connection: Pick<SavedConnection, 'providerId' | 'baseURL' | 'apiKey'>,
-  paths: StoragePaths
-) {
-  const id = createHash('sha256')
-    .update(`${connection.providerId}\n${connection.baseURL}\n${connection.apiKey}`)
-    .digest('hex');
-  return join(paths.cacheDirectory, `${id}.json`);
+/** 生成连接在缓存文件中的条目键；与凭据无关，换 Key 后仍复用同一条清单。 */
+function modelCacheKey(connection: Pick<SavedConnection, 'providerId' | 'baseURL'>): string {
+  const endpoint = createHash('sha256').update(connection.baseURL).digest('hex').slice(0, 16);
+  return `${connection.providerId}-${endpoint}`;
 }
 
-/** 更新当前连接的模型清单缓存；缓存不保存 API Key。 */
+/** 读取全部缓存条目；文件缺失或损坏时返回空集合。 */
+async function readModelCatalogFile(paths: StoragePaths): Promise<ModelCatalogFile> {
+  try {
+    const parsed = JSON.parse(await readFile(paths.modelsFile, 'utf8')) as ModelCatalogFile;
+    if (parsed && typeof parsed.entries === 'object' && parsed.entries !== null) return parsed;
+  } catch {
+    // 首次运行、缓存损坏或没有读取权限时都按空缓存处理。
+  }
+  return { entries: {} };
+}
+
+/** 校验一个缓存条目，字段缺失或不合法时返回 undefined。 */
+function readCacheEntry(entry: unknown): ModelCacheEntry | undefined {
+  if (typeof entry !== 'object' || entry === null) return undefined;
+  const candidate = entry as ModelCacheEntry;
+  const catalog = candidate.catalog;
+  if (
+    typeof candidate.providerId !== 'string' ||
+    typeof candidate.baseURL !== 'string' ||
+    typeof catalog !== 'object' ||
+    catalog === null ||
+    !Array.isArray(catalog.models) ||
+    !catalog.models.every(model => typeof model === 'string') ||
+    !['api', 'documentation'].includes(catalog.source)
+  ) {
+    return undefined;
+  }
+  return candidate;
+}
+
+/** 更新当前连接的模型清单缓存；只改动对应条目，保留其他连接的清单。 */
 export async function saveModelCatalog(
   connection: SavedConnection,
   catalog: ModelCatalog,
   paths = STORAGE_PATHS
 ): Promise<void> {
-  await writeJSON(modelCacheFile(connection, paths), {
-    providerId: connection.providerId,
-    baseURL: connection.baseURL,
-    ...catalog,
-  });
+  const key = modelCacheKey(connection);
+  const file = await readModelCatalogFile(paths);
+  const entries = {
+    ...file.entries,
+    [key]: { providerId: connection.providerId, baseURL: connection.baseURL, catalog },
+  };
+  await writeJSON(paths.modelsFile, { entries } satisfies ModelCatalogFile);
 }
 
-/** 读取当前连接的模型清单缓存；临时文件丢失或损坏时视为无缓存。 */
+/** 读取当前连接的模型清单缓存；文件缺失、条目不存在或格式无效时视为无缓存。 */
 export async function loadModelCatalog(
   connection: SavedConnection,
   paths = STORAGE_PATHS
 ): Promise<ModelCatalog | undefined> {
-  try {
-    const catalog = JSON.parse(
-      await readFile(modelCacheFile(connection, paths), 'utf8')
-    ) as ModelCatalog;
-    if (
-      !Array.isArray(catalog.models) ||
-      !catalog.models.every(model => typeof model === 'string') ||
-      !['api', 'documentation'].includes(catalog.source) ||
-      typeof catalog.updatedAt !== 'string'
-    )
-      return undefined;
-    return catalog;
-  } catch {
-    return undefined;
-  }
+  const entry = readCacheEntry(
+    (await readModelCatalogFile(paths)).entries[modelCacheKey(connection)]
+  );
+  return entry?.catalog;
 }
