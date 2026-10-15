@@ -11,7 +11,7 @@ export interface ProviderDefinition {
 }
 
 /** 按官方文档注册的 OpenAI Chat Completions 兼容服务商。 */
-export const providers: readonly ProviderDefinition[] = [
+export const PROVIDERS: readonly ProviderDefinition[] = [
   { id: 'deepseek', name: 'DeepSeek', baseURL: 'https://api.deepseek.com' },
   { id: 'minimax-api', name: 'MiniMax（API）', baseURL: 'https://api.minimax.cn/v1' },
   { id: 'minimax-token-plan', name: 'MiniMax（Token Plan）', baseURL: 'https://api.minimax.cn/v1' },

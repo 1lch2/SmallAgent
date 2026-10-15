@@ -2,26 +2,30 @@
 
 [返回功能索引](../feature-map.yaml)
 
-覆盖状态：已核对工具注册、读写入口与共享路径检查；通过 Agent 工具循环验证工作区模式的目录外读写限制、完全许可模式放行。最近核对：2026-10-15。符号链接等其他场景未在本次运行验收。
+覆盖状态：已核对工具注册、读写入口、共享路径检查与两个目录例外。最近核对：2026-10-15。
 
 ## 入口与关键实现
 
-- [src/tools/file-read.ts](../../src/tools/file-read.ts)：`fileReadTool` 注册 `file_read`；`fileRead` 解析目标路径、检查权限并读取 UTF-8 文本，工作区模式下额外允许读取当前会话已注册的 SKILL.md。
+- [src/tools/file-read.ts](../../src/tools/file-read.ts)：`fileReadTool` 注册 `file_read`；`fileRead` 解析目标路径、检查权限并读取 UTF-8 文本。
 - [src/tools/file-write.ts](../../src/tools/file-write.ts)：`fileWriteTool` 注册 `file_write`；`fileWrite` 检查路径后以 UTF-8 创建或覆盖文件，不创建父目录。
-- [src/utils/path.ts](../../src/utils/path.ts)：`resolvePath` 将相对路径关联到调用方传入的 `cwd`。
+- [src/utils/path.ts](../../src/utils/path.ts)：`resolvePath` 将相对路径关联到调用方传入的 `cwd`；`isInsideDirectory` 判断目标是否位于指定目录内，供两个工具的例外共用。
 - [src/hook/usePathValidation.ts](../../src/hook/usePathValidation.ts)：`usePathValidation` 是异步路径权限函数，不是 React Hook；以 `process.cwd()` 的真实路径为根，检查一个或多个路径。
-- [src/tools/index.ts](../../src/tools/index.ts)：工具注册与错误文本转换，公共分派流程见[Agent 循环](agent-loop.md)。
+- [src/core/settings.ts](../../src/core/settings.ts)：`USER_DATA_DIRECTORY` 给出用户目录 `~/.liberi`，`SETTINGS_FILENAME` 给出读取时唯一排除的凭据文件名，`TMP_DIRECTORY` 给出写入例外目录；目录职责见[设置配置](settings.md)。
 
-## 调用链与权限边界
+工具注册与错误文本转换见[Agent 循环](agent-loop.md)。
 
-`executeTool` → `fileRead` / `fileWrite` → `resolvePath` → 工作区模式下 `usePathValidation` → `fs.readFile` / `fs.writeFile`。`permission` 默认 `workspace-write`；`full-access` 跳过路径检查，仍使用同样的路径解析与文件读写，实际访问受操作系统权限限制。配置入口见[设置配置](settings.md)。
+## 权限边界
 
-渐进加载 skill 时，Agent 将初始化阶段注册的 SKILL.md 绝对路径传给 `executeTool`。`file_read` 对路径规范化后命中注册列表的文件直接允许读取，其余路径仍走原有检查；这个例外仅适用于注册的文件本身，不扩展到整个用户 skill 目录，也不授予 `file_write` 或命令工具额外权限。注册与同名覆盖规则见[Agent 循环](agent-loop.md)。
+`permission` 默认 `workspace-write`，此时只能访问工作目录内的路径；`full-access` 跳过路径检查，实际访问仍受操作系统权限限制。配置入口见[设置配置](settings.md)。
 
-已存在路径通过 `realpath` 检查真实目标是否在根内；目标不存在时检查其父目录真实路径，目标存在但无法解析的情况拒绝访问。权限失败通过异常交给分派器转换为模型可见文本。
+工作区模式下另有三个例外：
 
-路径解析使用 Agent 传入的 `cwd`，权限根使用进程工作目录；当前[启动入口](cli-startup.md)将两者设为同一目录。文件写入前先读取是工具描述中的模型指令，执行函数没有强制这一顺序。[命令执行](terminal-tool.md)使用独立的终端命令校验，在工作区模式下检查 PowerShell 和 Bash 命令，不复用此函数。
+- Agent 初始化阶段注册的 SKILL.md 绝对路径可以只读访问，仅限注册的文件本身，注册与同名覆盖规则见[Agent 循环](agent-loop.md)。
+- `file_read` 可读取用户目录 `~/.liberi` 及其子目录下的文件，唯一排除根部的 `SETTINGS_FILENAME`。
+- `file_write` 只能额外写 `TMP_DIRECTORY` 及其子目录，用于回写网页抓取等临时产物；用户目录其余位置仍不可写。
 
-## 验证入口与待补充范围
+例外只放宽对应的那一项工具，不改变其他工具的边界。权限失败通过异常交给分派器转换为模型可见文本。
 
-现有静态检查入口为 `npm run typecheck`，模型工具入口为 `npm start`。未保留自动化测试；本次在临时目录验证目录外文件的拒绝与放行，符号链接、文件不存在及写入失败等其他行为未运行核验。
+## 补充边界
+
+路径解析使用 Agent 传入的 `cwd`，权限根使用进程工作目录；当前[启动入口](cli-startup.md)将两者设为同一目录。文件写入前先读取是工具描述中的模型指令，执行函数没有强制这一顺序。[命令执行](terminal-tool.md)使用独立的终端命令校验，不复用此函数。

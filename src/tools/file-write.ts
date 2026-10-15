@@ -1,7 +1,8 @@
 import * as fs from 'node:fs/promises';
 import { usePathValidation } from '../hook/usePathValidation';
 import type { ToolDefinition } from '../types';
-import { resolvePath } from '../utils/path';
+import { isInsideDirectory, resolvePath } from '../utils/path';
+import { TMP_DIRECTORY } from '../core/settings';
 import type { PermissionMode } from '../core/settings';
 
 /** 按权限模式检查路径并写入文件内容。 */
@@ -11,8 +12,14 @@ export async function fileWrite(
   permission: PermissionMode = 'workspace-write'
 ): Promise<string> {
   const target = resolvePath(String(args.path), cwd);
-  if (permission === 'workspace-write' && !(await usePathValidation(target))) {
-    throw new Error(`权限不足：禁止写入工作目录以外的路径（${target}）。`);
+  if (
+    permission === 'workspace-write' &&
+    !isInsideDirectory(target, TMP_DIRECTORY) &&
+    !(await usePathValidation(target))
+  ) {
+    throw new Error(
+      `权限不足：禁止写入工作目录以外的路径（${target}），仅额外允许临时目录 ~/.liberi/tmp。`
+    );
   }
   await fs.writeFile(target, String(args.content), 'utf-8');
   return `Wrote ${target}`;
@@ -23,7 +30,7 @@ export const fileWriteTool = {
   definition: {
     name: 'file_write',
     description:
-      'Create or overwrite a file according to the configured permission mode. Always read the file first when modifying an existing file.',
+      'Create or overwrite a file according to the configured permission mode. In workspace-write mode only the working directory and the ~/.liberi/tmp directory are writable. Always read the file first when modifying an existing file.',
     parameters: {
       type: 'object',
       properties: {

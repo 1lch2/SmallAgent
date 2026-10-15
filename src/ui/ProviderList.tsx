@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Box, Text, useInput } from 'ink';
 import TextInput from 'ink-text-input';
 import Spinner from 'ink-spinner';
-import { normalizeBaseURL, providers } from '../core/provider';
+import { normalizeBaseURL, PROVIDERS } from '../core/provider';
 import { useProviderSession } from '../hook/useProviderSession';
 import { List } from './List';
 
@@ -14,7 +14,7 @@ export interface ProviderListProps {
 /** 展示服务商列表、端点与密钥输入，并验证连接后返回聊天界面。 */
 export function ProviderList({ busy }: ProviderListProps) {
   const session = useProviderSession();
-  const initialIndex = providers.findIndex(item => item.id === session.settings.selectedProviderId);
+  const initialIndex = PROVIDERS.findIndex(item => item.id === session.settings.selectedProviderId);
   const [selectedIndex, setSelectedIndex] = useState(Math.max(0, initialIndex));
   const [step, setStep] = useState<'list' | 'endpoint' | 'key'>('list');
   const [apiKey, setApiKey] = useState('');
@@ -23,7 +23,7 @@ export function ProviderList({ busy }: ProviderListProps) {
   const [removing, setRemoving] = useState(false);
   const [deletePending, setDeletePending] = useState(false);
   const [error, setError] = useState<string>();
-  const provider = providers[selectedIndex]!;
+  const provider = PROVIDERS[selectedIndex]!;
   const blocked = busy || session.loadingConfig || connecting || removing;
 
   function selectProvider() {
@@ -61,7 +61,7 @@ export function ProviderList({ busy }: ProviderListProps) {
     setError(undefined);
     try {
       await session.removeProvider(provider.id);
-      const nextIndex = providers.findIndex(
+      const nextIndex = PROVIDERS.findIndex(
         item =>
           item.id !== provider.id &&
           session.settings.connections.some(option => option.providerId === item.id)
@@ -99,7 +99,7 @@ export function ProviderList({ busy }: ProviderListProps) {
       <Text bold>选择 Provider</Text>
       <Text dimColor>↑↓ 选择 · Enter 确认 · D 移除配置 · Esc 返回</Text>
       <List
-        items={providers.map(item => ({
+        items={PROVIDERS.map(item => ({
           id: item.id,
           label: `${item.name}${
             session.connection?.options.providerId === item.id

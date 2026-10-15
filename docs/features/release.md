@@ -18,6 +18,6 @@
 
 最终使用 `gh release create --notes-file` 发布说明并上传 `.tgz`，替代 GitHub 默认的 `--generate-notes`。现有 Release 不会被重跑覆盖。本流程创建 GitHub Release，不发布 npm registry。
 
-## 验证入口与边界
+## 边界
 
-`node --check scripts/release-notes.mjs` 检查脚本语法。可用 `node scripts/release-notes.mjs <tag> <releases.json> <notes.md>` 本地预览，须设置仓库 URL 环境变量；该脚本只读取 Git 历史并写入输出文件，不发布 Release。线上权限、GitHub API 和安装包上传仍需实际工作流验收。
+`node scripts/release-notes.mjs <tag> <releases.json> <notes.md>` 只读取 Git 历史并写入输出文件，不发布 Release；发布动作由工作流完成。

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Box, Text, useInput } from 'ink';
 import { useProviderSession } from '../hook/useProviderSession';
 import { List } from './List';
-import { permissionLabels } from '../core/settings';
+import { PERMISSION_LABELS } from '../core/settings';
 
 /** 使用通用列表展示 Agent 设置，选择配置项后进入对应编辑页面。 */
 export function ConfigList() {
@@ -29,7 +29,7 @@ export function ConfigList() {
             id: 'permission',
             label: 'permission',
             comment: 'agent 权限审批模式',
-            value: permissionLabels[session.settings.permission],
+            value: PERMISSION_LABELS[session.settings.permission],
           },
         ]}
         selectedIndex={selectedIndex}

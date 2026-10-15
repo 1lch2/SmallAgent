@@ -155,7 +155,7 @@ features:
     doc: docs/features/terminal-ui.md
     entrypoints: [src/ui/App.tsx, src/core/commands.ts, src/hook/useCommands.ts]
   - id: file-tools
-    name: 文件读写与工作目录路径权限
+    name: 文件读写、工作目录路径权限与用户目录例外
     keywords:
       [
         file_read,
@@ -163,13 +163,30 @@ features:
         fileRead,
         fileWrite,
         usePathValidation,
+        isInsideDirectory,
+        USER_DATA_DIRECTORY,
+        SETTINGS_FILENAME,
+        TMP_DIRECTORY,
+        settings.json,
+        skills,
+        tmp,
+        .liberi,
+        用户目录,
+        白名单,
+        例外,
         文件,
         权限,
         realpath,
         工作目录,
       ]
     doc: docs/features/file-tools.md
-    entrypoints: [src/tools/file-read.ts, src/tools/file-write.ts, src/hook/usePathValidation.ts]
+    entrypoints:
+      [
+        src/tools/file-read.ts,
+        src/tools/file-write.ts,
+        src/utils/path.ts,
+        src/hook/usePathValidation.ts,
+      ]
   - id: terminal-tool
     name: Shell 命令执行与 PowerShell、Bash 路径检查
     keywords:

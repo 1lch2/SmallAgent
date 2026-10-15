@@ -5,7 +5,7 @@ import { lookup } from 'node:dns/promises';
 import { isIP } from 'node:net';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { tmpDirectory } from '../core/settings';
+import { TMP_DIRECTORY } from '../core/settings';
 import type { ToolDefinition } from '../types';
 import { errorMessage } from '../utils/error';
 import { truncateBytes } from '../utils/format';
@@ -127,7 +127,7 @@ async function buildContentOutput(
   const header = [title ? `# ${title}` : undefined, `> ${url}`].filter(Boolean).join('\n');
   if (text.length <= OUTPUT_INLINE_LIMIT) return `${header}\n\n${text}`;
 
-  const directory = join(tmpDirectory, 'web');
+  const directory = join(TMP_DIRECTORY, 'web');
   const host = new URL(url).hostname.replace(/[^\w.-]/g, '_');
   const file = join(
     directory,

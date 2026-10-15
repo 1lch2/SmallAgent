@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Box, Text, useInput } from 'ink';
 import Spinner from 'ink-spinner';
 import { useProviderSession } from '../hook/useProviderSession';
-import { providers } from '../core/provider';
+import { PROVIDERS } from '../core/provider';
 import { List } from './List';
 
 /** 模型选择页面的忙碌状态与设置目标。 */
@@ -21,7 +21,7 @@ export function ModelList({ busy, target = 'agent' }: ModelListProps) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string>();
   const blocked = busy || loadingConfig || loading || saving;
-  const provider = providers.find(item => item.id === connection?.options.providerId);
+  const provider = PROVIDERS.find(item => item.id === connection?.options.providerId);
   const currentModel =
     target === 'subagent' ? session.settings.subagentModel : connection?.options.model;
 

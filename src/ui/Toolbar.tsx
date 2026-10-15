@@ -1,6 +1,6 @@
 import { Box, Text } from 'ink';
 import type { TokenUsage } from '../types';
-import { permissionLabels } from '../core/settings';
+import { PERMISSION_LABELS } from '../core/settings';
 import type { PermissionMode } from '../core/settings';
 
 /** 统一 Token 计数显示，大数使用一位小数的万、亿单位。 */
@@ -27,7 +27,7 @@ export function Toolbar({ model, permission, usage }: ToolbarProps) {
       <Text>
         <Text color="#fde68a">{model}</Text>
         {' · '}
-        <Text color="#d8b4fe">{permissionLabels[permission]}</Text>
+        <Text color="#d8b4fe">{PERMISSION_LABELS[permission]}</Text>
       </Text>
       <Text color="gray">
         {`${formatTokenCount(usage.totalTokens)} tokens · 缓存 ${formatTokenCount(usage.cachedTokens)} tokens · 命中率 ${(cacheHitRate * 100).toFixed(1)}%`}

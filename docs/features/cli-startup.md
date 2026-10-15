@@ -2,7 +2,7 @@
 
 [返回功能索引](../feature-map.yaml)
 
-覆盖状态：已核对入口及启动、构建、退出主链路；构建和 Windows PowerShell PTY 退出检查通过。最近核对：2026-10-14。未执行安装包验收。
+覆盖状态：已核对入口及启动、构建、退出主链路。最近核对：2026-10-15。
 
 ## 入口与关键实现
 
@@ -25,8 +25,4 @@
 - [.codex/config.toml](../../.codex/config.toml)、[.codex/hooks.json](../../.codex/hooks.json)：启用 Codex hooks，在 `Stop` 事件调用仓库根目录下的格式化脚本。首次加载及定义变更后需在 Codex 中审阅、信任 hook。
 - [.codex/hooks/format.mjs](../../.codex/hooks/format.mjs)：从脚本位置确定仓库根目录，调用本地 Prettier；日志输出到 stderr，成功时 stdout 返回 JSON，失败时以非零状态结束。
 
-这些检查属于开发工作流，不在本项目 Agent 的对话循环中执行。Codex 自动事件触发与 hook 信任状态仍需实际会话验收。
-
-## 验证入口与待补充范围
-
-现有命令为 `npm start`、`npm run typecheck`、`npm run build` 和 `npm run format:check`；可用 `npm run commitlint -- --edit <消息文件>` 手动检查提交信息。本专题没有对应的自动化测试入口。发布流程及安装包分发见[GitHub Actions 发布](release.md)，编辑器调试配置未纳入本专题。
+这些检查属于开发工作流，不在本项目 Agent 的对话循环中执行。发布流程及安装包分发见[GitHub Actions 发布](release.md)，编辑器调试配置未纳入本专题。

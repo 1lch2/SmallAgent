@@ -2,13 +2,13 @@ import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
-import { providers } from './provider';
+import { PROVIDERS } from './provider';
 
 /** Agent 工具的工作区限制模式。 */
 export type PermissionMode = 'workspace-write' | 'full-access';
 
 /** 权限审批模式对应的界面名称。 */
-export const permissionLabels: Record<PermissionMode, string> = {
+export const PERMISSION_LABELS: Record<PermissionMode, string> = {
   'workspace-write': '工作区写入',
   'full-access': '完全许可',
 };
@@ -29,8 +29,14 @@ export interface Settings {
   permission: PermissionMode;
 }
 
-/** 用户目录中的统一设置文件。 */
-export const settingsFile = join(homedir(), '.liberi', 'settings.json');
+/** 用户目录中保存 Agent 数据与临时产物的根目录。 */
+export const USER_DATA_DIRECTORY = join(homedir(), '.liberi');
+
+/** 用户目录中的统一设置文件，也是其中唯一保存明文凭据的文件。 */
+export const SETTINGS_FILENAME = 'settings.json';
+
+/** 用户目录中的统一设置文件路径。 */
+export const SETTINGS_FILE = join(USER_DATA_DIRECTORY, SETTINGS_FILENAME);
 
 /** 通过临时文件重命名原子保存 JSON，以 0600 模式创建文件。 */
 async function writeJSON(file: string, data: unknown): Promise<void> {
@@ -43,20 +49,14 @@ async function writeJSON(file: string, data: unknown): Promise<void> {
   await rename(temporary, file);
 }
 
-/** 读取统一设置；新文件缺失时读取旧服务商配置，首次启动返回空清单。 */
-export async function loadSettings(file = settingsFile): Promise<Settings> {
+/** 读取统一设置；文件缺失时返回空清单。 */
+export async function loadSettings(file = SETTINGS_FILE): Promise<Settings> {
   let text: string;
   try {
     text = await readFile(file, 'utf8');
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw new Error('无法读取本地设置。');
-    try {
-      text = await readFile(join(dirname(file), 'providers.json'), 'utf8');
-    } catch (legacyError) {
-      if ((legacyError as NodeJS.ErrnoException).code === 'ENOENT')
-        return { connections: [], permission: 'workspace-write' };
-      throw new Error('无法读取旧服务商配置。');
-    }
+    return { connections: [], permission: 'workspace-write' };
   }
   try {
     const data = JSON.parse(text) as Omit<Settings, 'permission'> & {
@@ -74,7 +74,7 @@ export async function loadSettings(file = settingsFile): Promise<Settings> {
     if (
       !data.connections.every(
         item =>
-          providers.some(provider => provider.id === item.providerId) &&
+          PROVIDERS.some(provider => provider.id === item.providerId) &&
           typeof item.baseURL === 'string' &&
           typeof item.model === 'string' &&
           typeof item.apiKey === 'string'
@@ -88,7 +88,7 @@ export async function loadSettings(file = settingsFile): Promise<Settings> {
 }
 
 /** 原子保存完整设置，统一写入 settings.json。 */
-export async function saveSettings(settings: Settings, file = settingsFile): Promise<void> {
+export async function saveSettings(settings: Settings, file = SETTINGS_FILE): Promise<void> {
   await writeJSON(file, settings);
 }
 
@@ -106,18 +106,18 @@ export interface ModelCatalog {
 }
 
 /** 用户目录中放置临时产物的统一位置。 */
-export const tmpDirectory = join(homedir(), '.liberi', 'tmp');
+export const TMP_DIRECTORY = join(USER_DATA_DIRECTORY, 'tmp');
 
 /** 默认配置位于用户目录，模型缓存与网页临时文件位于用户目录下的临时目录。 */
-export const storagePaths: StoragePaths = {
-  configFile: settingsFile,
-  cacheDirectory: join(tmpDirectory, 'models'),
+export const STORAGE_PATHS: StoragePaths = {
+  configFile: SETTINGS_FILE,
+  cacheDirectory: join(TMP_DIRECTORY, 'models'),
 };
 
 /** 保存连接选项并选中该服务商，不覆盖其他服务商的选项。 */
 export async function saveProviderConnection(
   connection: SavedConnection,
-  paths = storagePaths
+  paths = STORAGE_PATHS
 ): Promise<void> {
   const settings = await loadSettings(paths.configFile);
   await saveSettings(
@@ -147,7 +147,7 @@ function modelCacheFile(
 export async function saveModelCatalog(
   connection: SavedConnection,
   catalog: ModelCatalog,
-  paths = storagePaths
+  paths = STORAGE_PATHS
 ): Promise<void> {
   await writeJSON(modelCacheFile(connection, paths), {
     providerId: connection.providerId,
@@ -159,7 +159,7 @@ export async function saveModelCatalog(
 /** 读取当前连接的模型清单缓存；临时文件丢失或损坏时视为无缓存。 */
 export async function loadModelCatalog(
   connection: SavedConnection,
-  paths = storagePaths
+  paths = STORAGE_PATHS
 ): Promise<ModelCatalog | undefined> {
   try {
     const catalog = JSON.parse(

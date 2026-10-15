@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Box, Text, useInput } from 'ink';
-import { permissionLabels } from '../core/settings';
+import { PERMISSION_LABELS } from '../core/settings';
 import type { PermissionMode } from '../core/settings';
 import { useProviderSession } from '../hook/useProviderSession';
 import { List } from './List';
@@ -43,8 +43,8 @@ export function PermissionList({ busy }: PermissionListProps) {
       <Text dimColor>↑↓ 选择 · Enter 保存 · Esc 返回</Text>
       <List
         items={[
-          { id: 'workspace-write', label: permissionLabels['workspace-write'] },
-          { id: 'full-access', label: permissionLabels['full-access'] },
+          { id: 'workspace-write', label: PERMISSION_LABELS['workspace-write'] },
+          { id: 'full-access', label: PERMISSION_LABELS['full-access'] },
         ]}
         selectedIndex={selectedIndex}
         onChange={setSelectedIndex}

@@ -1,12 +1,12 @@
 import { createContext, useCallback, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Agent } from '../core/agent';
-import { connectProvider, fetchModelCatalog, providers } from '../core/provider';
+import { connectProvider, fetchModelCatalog, PROVIDERS } from '../core/provider';
 import type { ProviderConnection, ProviderDefinition } from '../core/provider';
 import {
   loadModelCatalog,
   loadSettings,
-  storagePaths as defaultStoragePaths,
+  STORAGE_PATHS,
   saveModelCatalog,
   saveProviderConnection,
   saveSettings,
@@ -42,14 +42,11 @@ export const ProviderSessionContext = createContext<ProviderSessionState | undef
 /** 服务商会话容器的子组件与存储位置。 */
 export interface ProviderSessionProps {
   children: ReactNode;
-  storagePaths?: StoragePaths;
+  paths?: StoragePaths;
 }
 
 /** 管理连接和页面状态，启动时只读取本地选项并初始化模型。 */
-export function ProviderSession({
-  children,
-  storagePaths = defaultStoragePaths,
-}: ProviderSessionProps) {
+export function ProviderSession({ children, paths = STORAGE_PATHS }: ProviderSessionProps) {
   const [connection, setConnection] = useState<ProviderConnection>();
   const [settings, setSettings] = useState<Settings>({
     connections: [],
@@ -70,7 +67,7 @@ export function ProviderSession({
     let cancelled = false;
     async function initialize() {
       try {
-        const saved = await loadSettings(storagePaths.configFile);
+        const saved = await loadSettings(paths.configFile);
         if (cancelled) return;
         setSettings(saved);
         const selected = saved.connections.find(
@@ -99,13 +96,13 @@ export function ProviderSession({
     return () => {
       cancelled = true;
     };
-  }, [storagePaths]);
+  }, [paths]);
 
   async function connect(provider: ProviderDefinition, apiKey: string, baseURL?: string) {
     const next = await connectProvider(provider, apiKey, baseURL);
     try {
-      await saveModelCatalog(next.options, next.catalog!, storagePaths);
-      await saveProviderConnection(next.options, storagePaths);
+      await saveModelCatalog(next.options, next.catalog!, paths);
+      await saveProviderConnection(next.options, paths);
     } catch {
       throw new Error('连接验证成功，但本地配置或模型缓存保存失败。');
     }
@@ -125,28 +122,28 @@ export function ProviderSession({
   const loadModels = useCallback(async (): Promise<ModelCatalog> => {
     if (!connection) throw new Error('未连接任何模型，请先使用 /provider 连接服务商。');
     if (connection.catalog) return connection.catalog;
-    const cached = await loadModelCatalog(connection.options, storagePaths);
+    const cached = await loadModelCatalog(connection.options, paths);
     if (cached?.models.length) return cached;
-    const provider = providers.find(item => item.id === connection.options.providerId)!;
+    const provider = PROVIDERS.find(item => item.id === connection.options.providerId)!;
     const catalog = await fetchModelCatalog(
       provider,
       connection.options.apiKey,
       connection.options.baseURL
     );
     try {
-      await saveModelCatalog(connection.options, catalog, storagePaths);
+      await saveModelCatalog(connection.options, catalog, paths);
     } catch {
       throw new Error('模型列表已获取，但本地模型缓存保存失败。');
     }
     return catalog;
-  }, [connection, storagePaths]);
+  }, [connection, paths]);
 
   async function selectModel(model: string) {
     if (!connection) throw new Error('请先连接服务商。');
     if (model !== connection.options.model) {
       const options = { ...connection.options, model };
       try {
-        await saveProviderConnection(options, storagePaths);
+        await saveProviderConnection(options, paths);
       } catch {
         throw new Error('模型选择保存失败，请检查本地配置文件。');
       }
@@ -162,20 +159,20 @@ export function ProviderSession({
   }
 
   async function removeProvider(providerId: string) {
-    const saved = await loadSettings(storagePaths.configFile);
+    const saved = await loadSettings(paths.configFile);
     if (!saved.connections.some(item => item.providerId === providerId)) return;
     const remaining = saved.connections.filter(item => item.providerId !== providerId);
-    const provider = providers.find(item =>
+    const provider = PROVIDERS.find(item =>
       remaining.some(option => option.providerId === item.id)
     );
     let next: ProviderConnection | undefined;
     if (provider) {
       const options = remaining.find(item => item.providerId === provider.id)!;
       let catalog = connection?.options.providerId === provider.id ? connection.catalog : undefined;
-      catalog ??= await loadModelCatalog(options, storagePaths);
+      catalog ??= await loadModelCatalog(options, paths);
       if (!catalog?.models.length) {
         catalog = await fetchModelCatalog(provider, options.apiKey, options.baseURL);
-        await saveModelCatalog(options, catalog, storagePaths);
+        await saveModelCatalog(options, catalog, paths);
       }
       const selected = { ...options, model: catalog.models[0]! };
       next = { options: selected, catalog, llm: new OpenAILLM(selected) };
@@ -188,7 +185,7 @@ export function ProviderSession({
       ),
     };
     try {
-      await saveSettings(updated, storagePaths.configFile);
+      await saveSettings(updated, paths.configFile);
     } catch {
       throw new Error('供应商配置删除失败，请检查本地配置文件。');
     }
@@ -203,17 +200,17 @@ export function ProviderSession({
   }
 
   async function selectSubagentModel(model: string) {
-    const saved = await loadSettings(storagePaths.configFile);
+    const saved = await loadSettings(paths.configFile);
     const updated = { ...saved, subagentModel: model };
-    await saveSettings(updated, storagePaths.configFile);
+    await saveSettings(updated, paths.configFile);
     setSettings(updated);
     setView('config');
   }
 
   async function selectPermission(permission: PermissionMode) {
-    const saved = await loadSettings(storagePaths.configFile);
+    const saved = await loadSettings(paths.configFile);
     const updated = { ...saved, permission };
-    await saveSettings(updated, storagePaths.configFile);
+    await saveSettings(updated, paths.configFile);
     agentRef.current?.setPermission(permission);
     setSettings(updated);
     setView('config');

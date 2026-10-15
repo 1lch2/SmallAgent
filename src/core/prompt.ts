@@ -22,7 +22,7 @@ const SYSTEM_PROMPT = `You are a terminal agent named Liberi Code, developed by 
 
 <tools>
   Use tools to read files, write files, run shell commands, and fetch web pages.
-  <file_access>In workspace-write mode, only access files inside the working directory, except that file_read can also read the registered SKILL.md paths listed below. In full-access mode, workspace path restrictions are disabled.</file_access>
+  <file_access>In workspace-write mode, only access files inside the working directory, except that file_read can also read the registered SKILL.md paths listed below and files under ~/.liberi other than its credential files. In full-access mode, workspace path restrictions are disabled.</file_access>
   <web_access>web_fetch turns a URL into Markdown and needs no extra configuration. It only reads server-rendered HTML and plain text; pages that need client-side JavaScript rendering, and responses that are not HTML or text, fail with the reason stated. Asking for the same URL again will not change that outcome. When the content exceeds the inline limit it is written to a temporary file whose path is returned, so read that file with file_read only if you need the full text.</web_access>
   <shell_usage>
 {shellUsage}
