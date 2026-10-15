@@ -17,6 +17,27 @@ npm start
 
 中文输入有问题，终端不显示当前输入字符，只能凭感觉敲字。在改了。
 
+## 功能
+
+目前支持的功能：
+- 基本文件读写，命令行工具
+- 网页读取
+- Skill
+- AGENTS.md
+- 工作区权限
+- Token 用量和缓存计数
+
+计划中的功能：
+- MCP
+- 会话管理
+- 上下文压缩
+- 网络搜索工具
+- Subagent
+- 兼容 OpenAI Responses 和 Anthropic API 格式
+- 权限自动审批
+- 工作区记忆
+- 工具沙箱
+
 ## 连接API
 
 当前只支持 OpenAI Chat Completion 格式的 API 端点，可以通过内置命令 `/provider` 连接以下供应商或者自定义的API端点：
