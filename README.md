@@ -26,11 +26,11 @@ npm start
 - AGENTS.md
 - 工作区权限
 - Token 用量和缓存计数
+- 上下文压缩
 
 计划中的功能：
 - MCP
 - 会话管理
-- 上下文压缩
 - 网络搜索工具
 - Subagent
 - 兼容 OpenAI Responses 和 Anthropic API 格式
