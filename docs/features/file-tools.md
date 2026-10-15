@@ -2,11 +2,11 @@
 
 [返回功能索引](../feature-map.yaml)
 
-覆盖状态：已核对工具注册、读写入口与共享路径检查；通过 Agent 工具循环验证工作区模式拒绝目录外读写、完全许可模式放行。最近核对：2026-10-14。符号链接等其他场景未在本次运行验收。
+覆盖状态：已核对工具注册、读写入口与共享路径检查；通过 Agent 工具循环验证工作区模式的目录外读写限制、完全许可模式放行。最近核对：2026-10-15。符号链接等其他场景未在本次运行验收。
 
 ## 入口与关键实现
 
-- [src/tools/file-read.ts](../../src/tools/file-read.ts)：`fileReadTool` 注册 `file_read`；`fileRead` 解析目标路径、检查权限并读取 UTF-8 文本。
+- [src/tools/file-read.ts](../../src/tools/file-read.ts)：`fileReadTool` 注册 `file_read`；`fileRead` 解析目标路径、检查权限并读取 UTF-8 文本，工作区模式下额外允许读取当前会话已注册的 SKILL.md。
 - [src/tools/file-write.ts](../../src/tools/file-write.ts)：`fileWriteTool` 注册 `file_write`；`fileWrite` 检查路径后以 UTF-8 创建或覆盖文件，不创建父目录。
 - [src/utils/path.ts](../../src/utils/path.ts)：`resolvePath` 将相对路径关联到调用方传入的 `cwd`。
 - [src/hook/usePathValidation.ts](../../src/hook/usePathValidation.ts)：`usePathValidation` 是异步路径权限函数，不是 React Hook；以 `process.cwd()` 的真实路径为根，检查一个或多个路径。
@@ -15,6 +15,8 @@
 ## 调用链与权限边界
 
 `executeTool` → `fileRead` / `fileWrite` → `resolvePath` → 工作区模式下 `usePathValidation` → `fs.readFile` / `fs.writeFile`。`permission` 默认 `workspace-write`；`full-access` 跳过路径检查，仍使用同样的路径解析与文件读写，实际访问受操作系统权限限制。配置入口见[设置配置](settings.md)。
+
+渐进加载 skill 时，Agent 将初始化阶段注册的 SKILL.md 绝对路径传给 `executeTool`。`file_read` 对路径规范化后命中注册列表的文件直接允许读取，其余路径仍走原有检查；这个例外仅适用于注册的文件本身，不扩展到整个用户 skill 目录，也不授予 `file_write` 或命令工具额外权限。注册与同名覆盖规则见[Agent 循环](agent-loop.md)。
 
 已存在路径通过 `realpath` 检查真实目标是否在根内；目标不存在时检查其父目录真实路径，目标存在但无法解析的情况拒绝访问。权限失败通过异常交给分派器转换为模型可见文本。
 

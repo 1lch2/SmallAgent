@@ -20,6 +20,7 @@
 - UI 组件名所在文件同名，需要被引用的类型优先使用 interface 而不是 type。 组件 props 的 interface 命名遵循 `{组件名}Props` 的习惯。
 - hook 统一组织在 src/hook 目录下
 - 组件统一组织在 src/ui 目录下
+- interface 优先于 type ，仅当需要使用定义简单的类型时优先选用 type 定义
 
 ## 行为边界
 

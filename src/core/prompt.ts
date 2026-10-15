@@ -3,6 +3,7 @@ import { homedir } from 'node:os';
 import { basename, join } from 'node:path';
 import { getCurrentShellInfo, type ShellType } from '../utils/shell';
 import type { PermissionMode } from './settings';
+import { loadSkills, type SkillMetadata } from './skills';
 
 // 系统提示词模板由此处统一维护，并注入运行环境信息和对应 Shell 的命令说明。
 const SYSTEM_PROMPT = `You are a terminal agent named Liberi Code, developed by 1lch2.
@@ -21,7 +22,7 @@ const SYSTEM_PROMPT = `You are a terminal agent named Liberi Code, developed by 
 
 <tools>
   Use tools to read files, write files, and run shell commands.
-  <file_access>In workspace-write mode, only access files inside the working directory. In full-access mode, workspace path restrictions are disabled.</file_access>
+  <file_access>In workspace-write mode, only access files inside the working directory, except that file_read can also read the registered SKILL.md paths listed below. In full-access mode, workspace path restrictions are disabled.</file_access>
   <shell_usage>
 {shellUsage}
   </shell_usage>
@@ -55,17 +56,45 @@ function readInstructions(directory: string): string {
   return `# AGENTS.md instructions for ${directory}\n<INSTRUCTIONS>\n${instructions}\n</INSTRUCTIONS>`;
 }
 
-/** 构建默认系统提示词，并依次追加用户主目录和工作目录中的 AGENTS.md 指令。 */
+function escapeXml(value: string): string {
+  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function buildSkillsPrompt(skills: SkillMetadata[]): string {
+  if (skills.length === 0) return '';
+  const availableSkills = skills
+    .map(
+      skill => `    <skill>
+      <name>${escapeXml(skill.name)}</name>
+      <description>${escapeXml(skill.description)}</description>
+      <path>${escapeXml(skill.path)}</path>
+    </skill>`
+    )
+    .join('\n');
+  return `\n\n<skills>
+  <usage>
+    The available skills below list metadata only. When a skill matches the task, use file_read to read its complete SKILL.md at the listed path before following its Markdown instructions.
+    Resolve relative paths in a skill's instructions from the directory containing its SKILL.md. Read additional referenced files only as needed and within the configured permissions.
+  </usage>
+  <available_skills>
+${availableSkills}
+  </available_skills>
+</skills>`;
+}
+
+/** 构建系统提示词，在工具后注入 skill 元数据，再追加用户及工作区 AGENTS.md。 */
 export function buildSystemPrompt(
   cwd: string,
-  permission: PermissionMode = 'workspace-write'
+  permission: PermissionMode = 'workspace-write',
+  skills: SkillMetadata[] = loadSkills(cwd)
 ): string {
   const shell = getCurrentShellInfo();
-  const prompt = SYSTEM_PROMPT.replace('{cwd}', cwd)
-    .replace('{currentDate}', getCurrentDate())
-    .replace('{shell}', `${shell.type} (${basename(shell.path)})`)
-    .replace('{shellUsage}', SHELL_USAGE[shell.type])
-    .replace('{permission}', permission);
+  const prompt =
+    SYSTEM_PROMPT.replace('{cwd}', cwd)
+      .replace('{currentDate}', getCurrentDate())
+      .replace('{shell}', `${shell.type} (${basename(shell.path)})`)
+      .replace('{shellUsage}', SHELL_USAGE[shell.type])
+      .replace('{permission}', permission) + buildSkillsPrompt(skills);
 
   const instructions = [readInstructions(homedir()), readInstructions(cwd)]
     .filter(Boolean)

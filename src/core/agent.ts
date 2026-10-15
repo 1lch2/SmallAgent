@@ -37,6 +37,7 @@ import { errorMessage } from '../utils/error';
 import { splitAssistantText } from '../utils/assistant-text';
 import { buildSystemPrompt } from './prompt';
 import type { PermissionMode } from './settings';
+import { loadSkills } from './skills';
 
 /** 初始化 Agent 所需的模型、工作目录与权限模式。 */
 export interface AgentOptions {
@@ -65,6 +66,7 @@ export class Agent {
   private llm: LLM;
   private cwd: string;
   private permission: PermissionMode;
+  private skillPaths: string[];
   private history: Message[] = [];
 
   /** 创建 Agent，并初始化包含工作目录的系统提示词。 */
@@ -72,9 +74,11 @@ export class Agent {
     this.llm = opts.llm;
     this.cwd = opts.cwd;
     this.permission = opts.permission ?? 'workspace-write';
+    const skills = loadSkills(this.cwd);
+    this.skillPaths = skills.map(skill => skill.path);
     this.history.push({
       role: 'system',
-      content: buildSystemPrompt(this.cwd, this.permission),
+      content: buildSystemPrompt(this.cwd, this.permission, skills),
     });
   }
 
@@ -147,7 +151,13 @@ export class Agent {
           callId: call.id,
         });
 
-        const output = await executeTool(call.name, parsed, this.cwd, this.permission);
+        const output = await executeTool(
+          call.name,
+          parsed,
+          this.cwd,
+          this.permission,
+          this.skillPaths
+        );
 
         onUpdate({ kind: 'tool_result', callId: call.id, name: call.name, args: parsed, output });
         this.history.push({

@@ -10,7 +10,8 @@ type ToolHandler = {
   execute: (
     args: Record<string, unknown>,
     cwd: string,
-    permission: PermissionMode
+    permission: PermissionMode,
+    readableSkillPaths: readonly string[]
   ) => Promise<string>;
 };
 
@@ -30,13 +31,14 @@ export async function executeTool(
   name: string,
   args: Record<string, unknown>,
   cwd: string,
-  permission: PermissionMode = 'workspace-write'
+  permission: PermissionMode = 'workspace-write',
+  readableSkillPaths: readonly string[] = []
 ): Promise<string> {
   const tool = toolRegistry.get(name);
   if (!tool) return `Unknown tool: ${name}`;
 
   try {
-    return await tool.execute(args, cwd, permission);
+    return await tool.execute(args, cwd, permission, readableSkillPaths);
   } catch (err) {
     return `Error: ${errorMessage(err)}`;
   }

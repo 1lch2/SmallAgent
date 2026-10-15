@@ -46,9 +46,14 @@ features:
         buildSystemPrompt,
         AGENTS.md,
         全局指令,
+        skill,
+        skills,
+        SKILL.md,
+        frontmatter,
+        渐进加载,
       ]
     doc: docs/features/agent-loop.md
-    entrypoints: [src/core/agent.ts, src/core/prompt.ts]
+    entrypoints: [src/core/agent.ts, src/core/prompt.ts, src/core/skills.ts]
   - id: model-adapter
     name: OpenAI 兼容模型接口与 Token 用量
     keywords:
