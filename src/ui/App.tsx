@@ -17,7 +17,7 @@ import { useCommands } from '../hook/useCommands';
 /** 管理终端输入和消息列表，并展示 Agent 的输出事件。 */
 export function App() {
   const session = useProviderSession();
-  const commands = useCommands();
+  const commands = useCommands(handleCompact);
   const { agent, connection } = session;
   const { stdout } = useStdout();
   const [terminalRows, setTerminalRows] = useState(stdout.rows ?? 0);
@@ -25,6 +25,8 @@ export function App() {
   const [input, setInput] = useState('');
   const [entries, setEntries] = useState<Entry[]>([]);
   const [busy, setBusy] = useState(false);
+  const [compacting, setCompacting] = useState(false);
+  const [compactStatus, setCompactStatus] = useState<string>();
   const [tokenUsage, setTokenUsage] = useState<TokenUsage>({
     totalTokens: 0,
     promptTokens: 0,
@@ -32,7 +34,7 @@ export function App() {
   });
 
   useEffect(() => {
-    setTokenUsage({ totalTokens: 0, promptTokens: 0, cachedTokens: 0 });
+    setTokenUsage(agent?.usage ?? { totalTokens: 0, promptTokens: 0, cachedTokens: 0 });
   }, [connection?.llm]);
 
   useEffect(() => {
@@ -81,11 +83,48 @@ export function App() {
       return;
     }
     setInput('');
+    setCompactStatus(undefined);
     setEntries(prev => [...prev, { type: 'user', text }]);
     setBusy(true);
     try {
       await agent.send(text, handleUpdate);
     } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleCompact() {
+    if (busy) {
+      setCompactStatus('请等待当前任务结束后压缩上下文。');
+      return;
+    }
+    if (!agent || !connection) {
+      setCompactStatus('未连接任何模型，请先使用 /provider。');
+      return;
+    }
+    if (!agent.canCompact) {
+      setCompactStatus('没有可压缩的早期历史，已保留最新一轮对话。');
+      return;
+    }
+    setBusy(true);
+    setCompacting(true);
+    setCompactStatus(undefined);
+    try {
+      const summary = await agent.compact(handleUpdate, await session.createCompactLLM());
+      if (summary !== undefined) {
+        setEntries(previous => [
+          { type: 'assistant_text_response', text: `### 上下文总结\n\n${summary}` },
+          ...previous.slice(previous.map(entry => entry.type).lastIndexOf('user')),
+        ]);
+        setCompactStatus('上下文已压缩。');
+      }
+    } catch (error) {
+      handleUpdate({
+        kind: 'error',
+        message: error instanceof Error ? error.message : '上下文压缩失败。',
+      });
+    } finally {
+      setCompacting(false);
       setBusy(false);
     }
   }
@@ -121,7 +160,7 @@ export function App() {
             <Text color="magenta">
               <Spinner type="dots" />
             </Text>
-            <Text> Thinking...</Text>
+            <Text>{compacting ? ' Compacting...' : ' Thinking...'}</Text>
           </Box>
         )}
       </Box>
@@ -133,6 +172,7 @@ export function App() {
           commands={commands}
         />
         {session.loadingConfig && <Text dimColor>正在读取本地配置...</Text>}
+        {compactStatus && <Text dimColor>{compactStatus}</Text>}
         {session.error && <Text color="yellow">{session.error} 使用 /provider 重新连接。</Text>}
         <Toolbar
           model={connection?.llm.model.name}

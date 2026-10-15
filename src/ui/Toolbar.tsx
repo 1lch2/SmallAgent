@@ -18,7 +18,7 @@ function formatContextWindow(tokens: number | undefined): string {
   return String(tokens);
 }
 
-/** 工具栏所需的模型、上下文长度、权限模式与累计用量，不依赖 App 或 Agent。 */
+/** 工具栏所需的模型、上下文长度、权限模式与当前用量，不依赖 App 或 Agent。 */
 export interface ToolbarProps {
   model?: string;
   contextWindow?: number;
@@ -26,7 +26,7 @@ export interface ToolbarProps {
   usage: TokenUsage;
 }
 
-/** 展示模型、权限模式、累计 Token 用量与上下文长度，以及缓存用量和命中率。 */
+/** 展示模型、权限模式、当前上下文用量与长度，以及缓存用量和命中率。 */
 export function Toolbar({ model, contextWindow, permission, usage }: ToolbarProps) {
   if (!model) return <Text color="gray">未连接任何模型 · 使用 /provider 连接服务商</Text>;
   const cacheHitRate = usage.promptTokens > 0 ? usage.cachedTokens / usage.promptTokens : 0;

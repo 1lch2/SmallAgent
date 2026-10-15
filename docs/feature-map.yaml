@@ -43,6 +43,9 @@ features:
         ReAct,
         对话,
         上下文,
+        compact,
+        上下文压缩,
+        history XML,
         工具调用,
         AgentUpdate,
         系统提示词,
@@ -58,7 +61,7 @@ features:
         渐进加载,
       ]
     doc: docs/features/agent-loop.md
-    entrypoints: [src/core/agent.ts, src/core/prompt.ts, src/core/skills.ts]
+    entrypoints: [src/core/agent.ts, src/core/compact.ts, src/core/prompt.ts, src/core/skills.ts]
   - id: model-adapter
     name: OpenAI 兼容模型接口与 Token 用量
     keywords:
@@ -116,7 +119,7 @@ features:
     doc: docs/features/providers.md
     entrypoints: [src/core/provider.ts, src/core/settings.ts, src/ui/ProviderList.tsx]
   - id: settings
-    name: Agent 设置、权限模式、统一配置文件与 subagent 模型占位
+    name: Agent 设置、权限模式、统一配置文件与总结模型
     keywords:
       [
         config,

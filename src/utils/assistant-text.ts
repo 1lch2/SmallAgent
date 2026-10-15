@@ -20,3 +20,8 @@ export function splitAssistantText(content: string) {
 function trimBoundaryBlankLines(text: string): string {
   return text.replace(/^(?:[ \t]*(?:\r\n|\n|\r))+/, '').replace(/(?:(?:\r\n|\n|\r)[ \t]*)+$/, '');
 }
+
+/** 移除助手正文中的思考块，未闭合的思考块连同其后内容一起移除。 */
+export function stripAssistantThinking(content: string): string {
+  return content.replace(/<think\b[^>]*>[\s\S]*?(?:<\/think\s*>|$)/gi, '').trim();
+}

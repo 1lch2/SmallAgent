@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { basename, join } from 'node:path';
 import { getCurrentShellInfo } from '../utils/shell';
+import { escapeXml } from '../utils/xml';
 import type { ToolDefinition } from '../types';
 import type { SkillMetadata } from './skills';
 
@@ -37,10 +38,6 @@ function readInstructions(directory: string): string {
   }
 
   return `# AGENTS.md instructions for ${directory}\n<INSTRUCTIONS>\n${instructions}\n</INSTRUCTIONS>`;
-}
-
-function escapeXml(value: string): string {
-  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 /** 根据传入的工具名称与描述生成提示词，不加载或预设工具。 */

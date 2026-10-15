@@ -13,6 +13,7 @@ import {
 } from '../core/settings';
 import type { ModelCatalog, PermissionMode, Settings, StoragePaths } from '../core/settings';
 import { OpenAILLM } from '../openai-llm';
+import type { LLM } from '../types';
 
 /** 连接、选项和页面状态的共享边界。 */
 export interface ProviderSessionState {
@@ -29,6 +30,7 @@ export interface ProviderSessionState {
   openPermissions: () => void;
   closeSelection: () => void;
   loadModels: () => Promise<ModelCatalog>;
+  createCompactLLM: () => Promise<LLM | undefined>;
   selectModel: (model: string) => Promise<void>;
   selectSubagentModel: (model: string) => Promise<void>;
   selectPermission: (permission: PermissionMode) => Promise<void>;
@@ -178,6 +180,19 @@ export function ProviderSession({ children, paths = STORAGE_PATHS }: ProviderSes
     setView('chat');
   }
 
+  async function createCompactLLM(): Promise<LLM | undefined> {
+    if (
+      !connection ||
+      !settings.subagentModel ||
+      settings.subagentModel === connection.options.model
+    ) {
+      return undefined;
+    }
+    const catalog = await loadModels();
+    const model = catalog.models.find(item => item.id === settings.subagentModel);
+    return model ? new OpenAILLM({ ...connection.options, model }) : undefined;
+  }
+
   async function removeProvider(providerId: string) {
     const saved = await loadSettings(paths.configFile);
     if (!saved.connections.some(item => item.providerId === providerId)) return;
@@ -248,6 +263,7 @@ export function ProviderSession({ children, paths = STORAGE_PATHS }: ProviderSes
         error,
         connect,
         loadModels,
+        createCompactLLM,
         selectModel,
         selectSubagentModel,
         selectPermission,

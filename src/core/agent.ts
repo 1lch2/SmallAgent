@@ -41,7 +41,8 @@ import type {
 } from '../types';
 import { executeTool, tools } from '../tools';
 import { errorMessage } from '../utils/error';
-import { splitAssistantText } from '../utils/assistant-text';
+import { splitAssistantText, stripAssistantThinking } from '../utils/assistant-text';
+import { buildCompactMessages, estimateContextTokens } from './compact';
 import {
   buildInstructionsPrompt,
   buildSkillsPrompt,
@@ -83,6 +84,7 @@ export class BaseAgent {
   protected readonly cwd: string;
   protected tools: ToolDefinition[] = [];
   private history: Message[] = [];
+  private tokenUsage: TokenUsage = { totalTokens: 0, promptTokens: 0, cachedTokens: 0 };
 
   /** 创建基础 Agent，默认注入基本提示词，也允许子类传入完整提示词。 */
   constructor(opts: BaseAgentOptions, systemPrompt = buildSystemPrompt(opts.cwd)) {
@@ -97,11 +99,61 @@ export class BaseAgent {
   /** 切换模型连接并保留当前对话历史；应在当前回合结束后调用。 */
   setLLM(llm: LLM): void {
     this.llm = llm;
+    this.tokenUsage = {
+      totalTokens: estimateContextTokens(this.history, this.tools),
+      promptTokens: 0,
+      cachedTokens: 0,
+    };
   }
 
   /** 返回当前模型的调用标识、展示名称与已知上下文限制。 */
   get model(): ModelInfo {
     return this.llm.model;
+  }
+
+  /** 返回当前上下文计数与最近一次主对话请求的缓存数据。 */
+  get usage(): TokenUsage {
+    return this.tokenUsage;
+  }
+
+  /** 判断保留最新一轮后，是否仍有更早的对话可以压缩。 */
+  get canCompact(): boolean {
+    const latestTurn = this.history.map(message => message.role).lastIndexOf('user');
+    return this.history.slice(1, latestTurn).some(message => message.role === 'user');
+  }
+
+  /** 独立总结早期历史并保留最新完整回合；失败时保留原历史与用量。 */
+  async compact(
+    onUpdate: (update: AgentUpdate) => void,
+    summaryLLM?: LLM
+  ): Promise<string | undefined> {
+    if (!this.canCompact) return undefined;
+    const latestTurn = this.history.map(message => message.role).lastIndexOf('user');
+    const messages = buildCompactMessages(this.history.slice(1, latestTurn));
+    const requiredTokens = Math.max(this.tokenUsage.totalTokens, estimateContextTokens(messages));
+    const capacity = summaryLLM?.model.contextWindow;
+    const inputLimit = summaryLLM?.model.maxInputTokens ?? capacity;
+    const llm =
+      capacity !== undefined &&
+      inputLimit !== undefined &&
+      Math.min(capacity, inputLimit) >= requiredTokens
+        ? summaryLLM!
+        : this.llm;
+    const response = await llm.complete({ messages, tools: [] });
+    const summary = stripAssistantThinking(response.content);
+    if (!summary || response.toolCalls?.length) {
+      throw new Error('上下文总结未返回有效正文，原历史已保留。');
+    }
+    const history: Message[] = [
+      this.history[0]!,
+      { role: 'assistant', content: `此前对话总结：\n${summary}` },
+      ...this.history.slice(latestTurn),
+    ];
+    const totalTokens = estimateContextTokens(history, this.tools);
+    this.history = history;
+    this.tokenUsage = { ...this.tokenUsage, totalTokens };
+    onUpdate({ kind: 'token_usage', usage: this.tokenUsage });
+    return summary;
   }
 
   /** 由子类接入工具执行，基础 Agent 不提供具体工具。 */
@@ -120,7 +172,10 @@ export class BaseAgent {
         msg = await this.llm.complete({
           messages: this.history,
           tools: this.tools,
-          onTokenUsage: usage => onUpdate({ kind: 'token_usage', usage }),
+          onTokenUsage: usage => {
+            this.tokenUsage = usage;
+            onUpdate({ kind: 'token_usage', usage });
+          },
         });
       } catch (err) {
         // API 错误转为事件，不抛——本轮中止，但 Agent 实例保持可用，

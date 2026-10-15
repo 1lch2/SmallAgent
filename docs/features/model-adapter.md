@@ -15,6 +15,6 @@
 
 [Agent 循环](agent-loop.md) → `OpenAILLM.complete` → 非流式 Chat Completions 请求 → 内部助手消息。工具参数保留为原始 JSON 字符串，由 Agent 解析；工具消息通过 `tool_call_id` 对齐。
 
-`OpenAILLM` 接收 `ModelInfo`，请求使用 `model.id`，展示与上下文信息使用同一对象。`BaseAgent.model` 读取当前适配器的元信息，`setLLM` 切换后立即反映新模型；元信息来源与缓存见[Provider](providers.md)。这些限制目前只作为模型信息保存，不触发上下文压缩或修改请求的输出预算。
+`OpenAILLM` 接收 `ModelInfo`，请求使用 `model.id`，展示与上下文信息使用同一对象。`BaseAgent.model` 读取当前适配器的元信息，`setLLM` 切换后立即反映新模型；元信息来源与缓存见[Provider](providers.md)。上下文与输入限制用于[压缩时选择总结模型](agent-loop.md)，不自动触发压缩或修改请求的输出预算。工具列表为空时，请求中省略 `tools` 字段。
 
-`tokenUsage` 属于适配器实例，按 OpenAI SDK 的标准字段累加 `usage.total_tokens`、`usage.prompt_tokens` 和 `usage.prompt_tokens_details.cached_tokens`，分别映射到内部 `TokenUsage` 的 `totalTokens`、`promptTokens` 和 `cachedTokens`，经 `onTokenUsage` 和 `AgentUpdate` 传到[终端工具栏](terminal-ui.md)。缓存量已包含在输入和总用量中，不重复相加。没有 choice 时抛出错误，由 Agent 请求错误分支处理。
+适配器将本次响应的 `usage.total_tokens`、`usage.prompt_tokens` 和 `usage.prompt_tokens_details.cached_tokens` 映射到 `TokenUsage`，不跨请求累加。`BaseAgent.usage` 保存当前计数，经 `AgentUpdate` 传到[终端工具栏](terminal-ui.md)；总结请求不更新主对话的缓存统计。压缩后或切换模型时，当前上下文数先本地估算，下次主响应返回后以服务端用量校正；本地估算并非各供应商分词器的精确计数。缓存量已包含在输入和总量中，不重复相加。没有 choice 时抛出错误，由 Agent 请求错误分支处理。

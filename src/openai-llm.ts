@@ -1,13 +1,6 @@
 import OpenAI from 'openai';
 import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
-import type {
-  AssistantMessage,
-  CompletionRequest,
-  LLM,
-  Message,
-  ModelInfo,
-  TokenUsage,
-} from './types';
+import type { AssistantMessage, CompletionRequest, LLM, Message, ModelInfo } from './types';
 import { errorMessage } from './utils/error';
 
 /** 描述 OpenAI 兼容端点的密钥、地址和模型配置。 */
@@ -44,7 +37,6 @@ export class OpenAILLM implements LLM {
   private client: OpenAI;
   /** 当前模型的调用 ID、展示名称与上下文限制。 */
   model: ModelInfo;
-  private tokenUsage: TokenUsage = { totalTokens: 0, promptTokens: 0, cachedTokens: 0 };
 
   /** 根据连接配置创建 OpenAI 兼容模型适配器。 */
   constructor(opts: OpenAILLMOptions) {
@@ -58,7 +50,9 @@ export class OpenAILLM implements LLM {
       .create({
         model: this.model.id,
         messages: request.messages.map(toOpenAIMessage),
-        tools: request.tools.map(tool => ({ type: 'function', function: tool })),
+        ...(request.tools.length
+          ? { tools: request.tools.map(tool => ({ type: 'function' as const, function: tool })) }
+          : {}),
       })
       .catch((error: unknown) => {
         const message = errorMessage(error);
@@ -66,13 +60,11 @@ export class OpenAILLM implements LLM {
         throw new Error(message.replaceAll(this.client.apiKey, '[已隐藏]'));
       });
     if (response.usage) {
-      this.tokenUsage = {
-        totalTokens: this.tokenUsage.totalTokens + response.usage.total_tokens,
-        promptTokens: this.tokenUsage.promptTokens + response.usage.prompt_tokens,
-        cachedTokens:
-          this.tokenUsage.cachedTokens + (response.usage.prompt_tokens_details?.cached_tokens ?? 0),
-      };
-      request.onTokenUsage?.(this.tokenUsage);
+      request.onTokenUsage?.({
+        totalTokens: response.usage.total_tokens,
+        promptTokens: response.usage.prompt_tokens,
+        cachedTokens: response.usage.prompt_tokens_details?.cached_tokens ?? 0,
+      });
     }
     const choice = response.choices[0];
     if (!choice) throw new Error('Model returned no choices.');

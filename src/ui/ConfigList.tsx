@@ -22,7 +22,7 @@ export function ConfigList() {
           {
             id: 'subagent-model',
             label: 'subagent model',
-            comment: '用于配置 subagent 所使用的模型',
+            comment: '用于上下文压缩的总结模型',
             value: session.settings.subagentModel ?? '未设置',
           },
           {
@@ -40,7 +40,7 @@ export function ConfigList() {
         }}
         active={!session.loadingConfig}
       />
-      <Text dimColor>从当前 Provider 的模型清单选择；subagent 功能尚未实现。</Text>
+      <Text dimColor>subagent model 用于上下文总结，从当前 Provider 的模型清单选择。</Text>
       {session.loadingConfig && <Text dimColor>正在读取本地配置...</Text>}
       {session.error && <Text color="red">{session.error}</Text>}
     </Box>

@@ -26,7 +26,7 @@ export type Message =
   | AssistantMessage
   | { role: 'tool'; callId: string; content: string };
 
-/** 当前模型会话累计的用量；缓存命中量是输入用量的一部分。 */
+/** 当前上下文用量；压缩后总量先本地估算，缓存数据保留到下次模型响应。 */
 export interface TokenUsage {
   totalTokens: number;
   promptTokens: number;
@@ -37,7 +37,7 @@ export interface TokenUsage {
 export interface CompletionRequest {
   messages: Message[];
   tools: ToolDefinition[];
-  /** 接收当前模型会话累计的总用量、输入用量和缓存命中量。 */
+  /** 接收本次请求的总用量、输入用量和缓存命中量。 */
   onTokenUsage?: (usage: TokenUsage) => void;
 }
 
