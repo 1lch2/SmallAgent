@@ -37,6 +37,8 @@ features:
     keywords:
       [
         Agent,
+        BaseAgent,
+        MainAgent,
         send,
         ReAct,
         对话,
@@ -45,6 +47,8 @@ features:
         AgentUpdate,
         系统提示词,
         buildSystemPrompt,
+        buildToolsPrompt,
+        buildSkillsPrompt,
         AGENTS.md,
         全局指令,
         skill,

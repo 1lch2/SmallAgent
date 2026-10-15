@@ -6,12 +6,12 @@
 
 ## 入口与关键实现
 
-- [src/tools/terminal-run.ts](../../src/tools/terminal-run.ts)：`terminalRunTool` 注册 `terminal_run`；`terminalRun` 检查权限后在指定工作目录执行命令。PowerShell 和 Bash 使用 `execFile`，CMD 与 sh 保留 `exec`。
+- [src/tools/terminal-run.ts](../../src/tools/terminal-run.ts)：`terminalRunTool` 注册 `terminal_run`，按实际 Shell 将命令用法写入工具描述；`terminalRun` 检查权限后在指定工作目录执行命令。PowerShell 和 Bash 使用 `execFile`，CMD 与 sh 保留 `exec`。
 - [src/utils/command-permission/terminal-permission.ts](../../src/utils/command-permission/terminal-permission.ts)：独立入口 `checkTerminalCommandPermission`，为 PowerShell 和 Bash 分派路径检查。
 - [src/utils/command-permission/powershell-paths.ts](../../src/utils/command-permission/powershell-paths.ts)：用 PowerShell 原生 AST 与静态参数绑定识别路径，分析进程不执行传入命令。
 - [src/utils/command-permission/bash-paths.ts](../../src/utils/command-permission/bash-paths.ts)：`getBashPaths` 用受限词法分析识别路径；`getBashEnvironment` 清理会改变启动行为的环境变量与导出函数，供分析和实际执行共用。
 - [src/utils/shell.ts](../../src/utils/shell.ts)：`getCurrentShellInfo` 在 Windows 优先选择 PowerShell 7，其次 Windows PowerShell，最后 CMD；非 Windows 优先已存在的 Bash，否则使用 `/bin/sh`。
-- [src/core/prompt.ts](../../src/core/prompt.ts)：根据同一 Shell 选择函数生成命令用法说明，提示词入口见[Agent 循环](agent-loop.md)。
+- [src/core/prompt.ts](../../src/core/prompt.ts)：`buildToolsPrompt` 接收工具描述并生成提示词，不再维护 Shell 用法；提示词入口见[Agent 循环](agent-loop.md)。
 
 ## 权限边界
 

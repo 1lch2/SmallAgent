@@ -1,6 +1,6 @@
 import { createContext, useCallback, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import { Agent } from '../core/agent';
+import { MainAgent } from '../core/agent';
 import { connectProvider, fetchModelCatalog, PROVIDERS } from '../core/provider';
 import type { ProviderConnection, ProviderDefinition } from '../core/provider';
 import {
@@ -17,7 +17,7 @@ import { OpenAILLM } from '../openai-llm';
 /** 连接、选项和页面状态的共享边界。 */
 export interface ProviderSessionState {
   connection?: ProviderConnection;
-  agent?: Agent;
+  agent?: MainAgent;
   settings: Settings;
   view: 'chat' | 'providers' | 'models' | 'config' | 'subagent-models' | 'permissions';
   loadingConfig: boolean;
@@ -55,11 +55,11 @@ export function ProviderSession({ children, paths = STORAGE_PATHS }: ProviderSes
   const [view, setView] = useState<ProviderSessionState['view']>('chat');
   const [loadingConfig, setLoadingConfig] = useState(true);
   const [error, setError] = useState<string>();
-  const agentRef = useRef<Agent>();
+  const agentRef = useRef<MainAgent>();
 
   function activate(next: ProviderConnection, permission = settings.permission) {
     if (agentRef.current) agentRef.current.setLLM(next.llm);
-    else agentRef.current = new Agent({ llm: next.llm, cwd: process.cwd(), permission });
+    else agentRef.current = new MainAgent({ llm: next.llm, cwd: process.cwd(), permission });
     setConnection(next);
   }
 

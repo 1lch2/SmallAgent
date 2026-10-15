@@ -14,7 +14,7 @@
 - [src/ui/List.tsx](../../src/ui/List.tsx)：Provider、模型和设置页面共用的受控列表，支持标签、可选说明和当前值，负责上下键循环导航与回车确认；布局见[设置配置](settings.md)。
 - [src/ui/ModelList.tsx](../../src/ui/ModelList.tsx)：读取当前 Provider 的模型清单；默认编辑聊天模型，`target="subagent"` 编辑 subagent 模型设置，并按对应已选模型定位。保存或取消后分别返回聊天或设置页；加载或保存时禁用选择，当前对话结束前禁止确认；卸载后忽略未完成的清单读取结果。
 - [src/core/settings.ts](../../src/core/settings.ts)：全局配置管理入口，统一设置、连接保存和临时模型缓存；`loadSettings`、`saveSettings` 读写配置，`saveProviderConnection` 保留其他 Agent 设置。内部 `writeJSON` 通过临时文件重命名原子写入，以 `0600` 模式创建文件；Windows 文件访问受当前用户目录的 ACL 控制。Agent 设置见[设置配置](settings.md)。
-- [src/ui/App.tsx](../../src/ui/App.tsx)：根据会话展示聊天、Provider、模型或设置相关选择页；未连接时禁止发送模型请求，当前回合结束后才能切换连接或模型。切换使用 `Agent.setLLM` 保留历史，重置用量统计。
+- [src/ui/App.tsx](../../src/ui/App.tsx)：根据会话展示聊天、Provider、模型或设置相关选择页；未连接时禁止发送模型请求，当前回合结束后才能切换连接或模型。会话创建 `MainAgent`，切换使用继承的 `BaseAgent.setLLM` 保留历史，重置用量统计。
 
 ## 删除供应商配置
 

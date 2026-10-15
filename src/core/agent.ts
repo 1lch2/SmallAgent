@@ -31,18 +31,27 @@
  *    每次 `llm.complete()` 一次性拿到完整响应，比流式实现简单很多。
  *    当前阶段优先可读性，延迟不是瓶颈。
  */
-import type { AssistantMessage, LLM, Message, TokenUsage } from '../types';
+import type { AssistantMessage, LLM, Message, TokenUsage, ToolDefinition } from '../types';
 import { executeTool, tools } from '../tools';
 import { errorMessage } from '../utils/error';
 import { splitAssistantText } from '../utils/assistant-text';
-import { buildSystemPrompt } from './prompt';
+import {
+  buildInstructionsPrompt,
+  buildSkillsPrompt,
+  buildSystemPrompt,
+  buildToolsPrompt,
+} from './prompt';
 import type { PermissionMode } from './settings';
 import { loadSkills } from './skills';
 
-/** 初始化 Agent 所需的模型、工作目录与权限模式。 */
-export interface AgentOptions {
+/** 初始化基础 Agent 所需的模型与工作目录。 */
+export interface BaseAgentOptions {
   llm: LLM;
   cwd: string;
+}
+
+/** 初始化主 Agent 所需的模型、工作目录与工具权限。 */
+export interface MainAgentOptions extends BaseAgentOptions {
   permission?: PermissionMode;
 }
 
@@ -61,31 +70,31 @@ export type AgentUpdate =
   | { kind: 'token_usage'; usage: TokenUsage }
   | { kind: 'error'; message: string };
 
-/** 持有对话历史，并驱动模型与工具之间的 ReAct 循环。 */
-export class Agent {
+/** 持有对话历史与基本提示词，提供不预加载工具和 skill 的 ReAct 循环。 */
+export class BaseAgent {
   private llm: LLM;
-  private cwd: string;
-  /** 当前工具执行权限；应在当前回合结束后更新。 */
-  permission: PermissionMode;
-  private skillPaths: string[];
+  protected readonly cwd: string;
+  protected tools: ToolDefinition[] = [];
   private history: Message[] = [];
 
-  /** 创建 Agent，并初始化包含工作目录的系统提示词。 */
-  constructor(opts: AgentOptions) {
+  /** 创建基础 Agent，默认注入基本提示词，也允许子类传入完整提示词。 */
+  constructor(opts: BaseAgentOptions, systemPrompt = buildSystemPrompt(opts.cwd)) {
     this.llm = opts.llm;
     this.cwd = opts.cwd;
-    this.permission = opts.permission ?? 'workspace-write';
-    const skills = loadSkills(this.cwd);
-    this.skillPaths = skills.map(skill => skill.path);
     this.history.push({
       role: 'system',
-      content: buildSystemPrompt(this.cwd, skills),
+      content: systemPrompt,
     });
   }
 
   /** 切换模型连接并保留当前对话历史；应在当前回合结束后调用。 */
   setLLM(llm: LLM): void {
     this.llm = llm;
+  }
+
+  /** 由子类接入工具执行，基础 Agent 不提供具体工具。 */
+  protected async executeTool(name: string, _args: Record<string, unknown>): Promise<string> {
+    return `Unknown tool: ${name}`;
   }
 
   /** 发送用户输入，并按处理过程推送 Agent 更新事件。 */
@@ -98,7 +107,7 @@ export class Agent {
       try {
         msg = await this.llm.complete({
           messages: this.history,
-          tools,
+          tools: this.tools,
           onTokenUsage: usage => onUpdate({ kind: 'token_usage', usage }),
         });
       } catch (err) {
@@ -142,13 +151,7 @@ export class Agent {
           callId: call.id,
         });
 
-        const output = await executeTool(
-          call.name,
-          parsed,
-          this.cwd,
-          this.permission,
-          this.skillPaths
-        );
+        const output = await this.executeTool(call.name, parsed);
 
         onUpdate({ kind: 'tool_result', callId: call.id, name: call.name, args: parsed, output });
         this.history.push({
@@ -158,5 +161,35 @@ export class Agent {
         });
       }
     }
+  }
+}
+
+/** 继承基础循环，装配全部工具、skill 和用户及工作区指令的主 Agent。 */
+export class MainAgent extends BaseAgent {
+  /** 当前工具执行权限；应在当前回合结束后更新。 */
+  permission: PermissionMode;
+  private readonly skillPaths: string[];
+
+  /** 加载主 Agent 的完整能力并初始化系统提示词。 */
+  constructor(opts: MainAgentOptions) {
+    const skills = loadSkills(opts.cwd);
+    super(
+      opts,
+      buildSystemPrompt(opts.cwd) +
+        buildToolsPrompt(tools) +
+        buildSkillsPrompt(skills) +
+        buildInstructionsPrompt(opts.cwd)
+    );
+    this.tools = tools;
+    this.permission = opts.permission ?? 'workspace-write';
+    this.skillPaths = skills.map(skill => skill.path);
+  }
+
+  /** 使用当前权限与已注册 skill 路径执行主 Agent 的工具。 */
+  protected override async executeTool(
+    name: string,
+    args: Record<string, unknown>
+  ): Promise<string> {
+    return executeTool(name, args, this.cwd, this.permission, this.skillPaths);
   }
 }

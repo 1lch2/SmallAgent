@@ -3,11 +3,19 @@ import { promisify } from 'node:util';
 import { checkTerminalCommandPermission } from '../utils/command-permission/terminal-permission';
 import { getBashEnvironment } from '../utils/command-permission/bash-paths';
 import type { ToolDefinition } from '../types';
-import { getCurrentShellInfo } from '../utils/shell';
+import { getCurrentShellInfo, type ShellType } from '../utils/shell';
 import type { PermissionMode } from '../core/settings';
 
 const execAsync = promisify(exec);
 const execFileAsync = promisify(execFile);
+
+const SHELL_USAGE: Record<ShellType, string> = {
+  powershell:
+    "Run PowerShell commands directly, such as `Get-ChildItem -Force` or `Get-Content -LiteralPath 'file.txt'`. Quote paths with single quotes and separate multiple commands with `;`.",
+  cmd: 'Run CMD commands directly, such as `dir /a` or `type "file.txt"`. Quote paths with double quotes and chain commands with `&&`.',
+  bash: "Run Bash commands directly, such as `pwd`, `ls -la`, or `cat 'file.txt'`. Quote paths with single quotes and chain commands with `&&`.",
+  sh: "Run POSIX shell commands directly, such as `pwd`, `ls -la`, or `cat 'file.txt'`. Quote paths with single quotes and chain commands with `&&`.",
+};
 
 /** 在指定工作目录执行命令；工作区模式下执行现有 Shell 路径检查。 */
 export async function terminalRun(
@@ -59,7 +67,8 @@ export const terminalRunTool = {
   definition: {
     name: 'terminal_run',
     description:
-      'Run a shell command from the working directory. In workspace-write mode, PowerShell and Bash validate paths and reject dynamic paths, assignments, directory changes and nested shells; CMD and sh skip this check. Full-access mode skips path validation. Returns combined stdout and stderr.',
+      'Run a shell command from the working directory. In workspace-write mode, PowerShell and Bash validate paths and reject dynamic paths, assignments, directory changes and nested shells; CMD and sh skip this check. Full-access mode skips path validation. Returns combined stdout and stderr. ' +
+      SHELL_USAGE[getCurrentShellInfo().type],
     parameters: {
       type: 'object',
       properties: {

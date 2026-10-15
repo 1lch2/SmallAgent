@@ -11,7 +11,7 @@
 - [src/ui/PermissionList.tsx](../../src/ui/PermissionList.tsx)：展示“工作区写入”和“完全许可”，默认选中当前模式；回车保存并返回设置页，Esc 取消，对话忙碌时禁止确认切换。显示名称由 `PERMISSION_LABELS` 提供，对应持久化值为 `workspace-write` / `full-access`。
 - [src/ui/List.tsx](../../src/ui/List.tsx)：通用列表组件，`ListItem` 提供 `label`、可选 `comment` 与 `value`。
 - [src/ui/ModelList.tsx](../../src/ui/ModelList.tsx)：`target="subagent"` 复用当前 Provider 的模型清单，并按已保存的 subagent 模型定位；回车保存后返回设置页，Esc 取消并返回设置页。没有连接时提示先使用 `/provider`。
-- [src/ui/ProviderSession.tsx](../../src/ui/ProviderSession.tsx)：维护设置、页面和连接；`selectSubagentModel` 保存模型，不切换当前聊天模型或创建 subagent；`selectPermission` 保存权限模式后更新 `Agent.permission`，启动时也向 Agent 传入保存的模式。
+- [src/ui/ProviderSession.tsx](../../src/ui/ProviderSession.tsx)：维护设置、页面和连接；`selectSubagentModel` 保存模型，不切换当前聊天模型或创建 subagent；`selectPermission` 保存权限模式后更新 `MainAgent.permission`，启动时也向 MainAgent 传入保存的模式。
 - [src/core/settings.ts](../../src/core/settings.ts)：全局配置管理入口，统一 Agent 设置、Provider 连接保存、模型缓存和临时产物位置。`Settings` 保存当前 Provider、连接、可选 `subagentModel` 和 `permission`；`loadSettings` 与 `saveSettings` 读写 `~/.liberi/settings.json`。`USER_DATA_DIRECTORY`、`SETTINGS_FILENAME`、`SETTINGS_FILE`、`TMP_DIRECTORY`、`STORAGE_PATHS` 与 `PERMISSION_LABELS` 提供存储位置和界面名称常量。
 
 ## 保存与行为边界

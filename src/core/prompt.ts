@@ -1,10 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { basename, join } from 'node:path';
-import { getCurrentShellInfo, type ShellType } from '../utils/shell';
-import { loadSkills, type SkillMetadata } from './skills';
+import { getCurrentShellInfo } from '../utils/shell';
+import type { ToolDefinition } from '../types';
+import type { SkillMetadata } from './skills';
 
-// 系统提示词模板由此处统一维护，并注入运行环境信息和对应 Shell 的命令说明。
+// 基本系统提示词只包含通用要求与运行环境，能力和项目指令由调用方另行注入。
 const SYSTEM_PROMPT = `You are a terminal agent named Liberi Code, developed by 1lch2.
 
 ## Requirements
@@ -16,23 +17,7 @@ const SYSTEM_PROMPT = `You are a terminal agent named Liberi Code, developed by 
   <cwd>{cwd}</cwd>
   <current_date>{currentDate}</current_date>
   <shell>{shell}</shell>
-</environment_context>
-
-<tools>
-  Use tools to read files, write files, run shell commands, and fetch web pages.
-  <web_access>web_fetch turns a URL into Markdown and needs no extra configuration. It only reads server-rendered HTML and plain text; pages that need client-side JavaScript rendering, and responses that are not HTML or text, fail with the reason stated. Asking for the same URL again will not change that outcome. When the content exceeds the inline limit it is written to a temporary file whose path is returned, so read that file with file_read only if you need the full text.</web_access>
-  <shell_usage>
-{shellUsage}
-  </shell_usage>
-</tools>`;
-
-const SHELL_USAGE: Record<ShellType, string> = {
-  powershell:
-    "- Run PowerShell commands directly, such as `Get-ChildItem -Force` or `Get-Content -LiteralPath 'file.txt'`.\n- Quote paths with single quotes and separate multiple commands with `;`.",
-  cmd: '- Run CMD commands directly, such as `dir /a` or `type "file.txt"`.\n- Quote paths with double quotes and chain commands with `&&`.',
-  bash: "- Run Bash commands directly, such as `pwd`, `ls -la`, or `cat 'file.txt'`.\n- Quote paths with single quotes and chain commands with `&&`.",
-  sh: "- Run POSIX shell commands directly, such as `pwd`, `ls -la`, or `cat 'file.txt'`.\n- Quote paths with single quotes and chain commands with `&&`.",
-};
+</environment_context>`;
 
 function getCurrentDate(): string {
   const now = new Date();
@@ -58,7 +43,26 @@ function escapeXml(value: string): string {
   return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-function buildSkillsPrompt(skills: SkillMetadata[]): string {
+/** 根据传入的工具名称与描述生成提示词，不加载或预设工具。 */
+export function buildToolsPrompt(
+  tools: readonly Pick<ToolDefinition, 'name' | 'description'>[]
+): string {
+  if (tools.length === 0) return '';
+  const descriptions = tools
+    .map(
+      tool => `  <tool>
+    <name>${escapeXml(tool.name)}</name>
+    <description>${escapeXml(tool.description)}</description>
+  </tool>`
+    )
+    .join('\n');
+  return `\n\n<tools>
+${descriptions}
+</tools>`;
+}
+
+/** 根据传入的 skill 元数据生成提示词，不加载 skill 正文。 */
+export function buildSkillsPrompt(skills: readonly SkillMetadata[]): string {
   if (skills.length === 0) return '';
   const availableSkills = skills
     .map(
@@ -80,17 +84,18 @@ ${availableSkills}
 </skills>`;
 }
 
-/** 构建系统提示词，在工具后注入 skill 元数据，再追加用户及工作区 AGENTS.md。 */
-export function buildSystemPrompt(cwd: string, skills: SkillMetadata[] = loadSkills(cwd)): string {
+/** 构建只包含通用要求、工作目录、本地日期和 Shell 信息的基本系统提示词。 */
+export function buildSystemPrompt(cwd: string): string {
   const shell = getCurrentShellInfo();
-  const prompt =
-    SYSTEM_PROMPT.replace('{cwd}', cwd)
-      .replace('{currentDate}', getCurrentDate())
-      .replace('{shell}', `${shell.type} (${basename(shell.path)})`)
-      .replace('{shellUsage}', SHELL_USAGE[shell.type]) + buildSkillsPrompt(skills);
+  return SYSTEM_PROMPT.replace('{cwd}', cwd)
+    .replace('{currentDate}', getCurrentDate())
+    .replace('{shell}', `${shell.type} (${basename(shell.path)})`);
+}
 
+/** 读取并生成用户主目录与工作区根部的 AGENTS.md 指令，保留原有分隔顺序。 */
+export function buildInstructionsPrompt(cwd: string): string {
   const instructions = [readInstructions(homedir()), readInstructions(cwd)]
     .filter(Boolean)
     .join('\n\n\n--- project-doc ---\n\n\n');
-  return instructions ? `${prompt}\n\n${instructions}` : prompt;
+  return instructions ? `\n\n${instructions}` : '';
 }

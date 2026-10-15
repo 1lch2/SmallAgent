@@ -26,7 +26,7 @@
 
 未连接时 `Toolbar` 显示“未连接任何模型”及 `/provider` 提示，普通消息不会请求模型。`/provider` 与 `/model` 打开列表页，当前回合结束前禁止确认切换；成功后返回聊天，失败保留原连接。连接与模型选择详见[Provider](providers.md)。
 
-`TextInput.onSubmit` → `handleSubmit` → [Agent.send](agent-loop.md) → `handleUpdate` → 展示条目或用量状态 → `Message`。空白输入和忙碌时的提交被忽略，执行结束时在 `finally` 中恢复忙碌状态。
+`TextInput.onSubmit` → `handleSubmit` → [BaseAgent.send](agent-loop.md)（由 MainAgent 继承）→ `handleUpdate` → 展示条目或用量状态 → `Message`。空白输入和忙碌时的提交被忽略，执行结束时在 `finally` 中恢复忙碌状态。
 
 文件工具调用只展示文件名，`App` 不追加其结果事件。网页抓取工具同样只展示单行青色摘要 `→ Fetch: {主机名}`，`App` 也不追加其结果事件。命令调用展示命令文本，命令结果先清理终端控制字符再截断显示。模型用量的计算归属见[模型适配](model-adapter.md)。
 

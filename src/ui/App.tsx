@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Box, Text, useStdout } from 'ink';
 import Spinner from 'ink-spinner';
-import { AgentUpdate } from '../core/agent';
+import type { AgentUpdate } from '../core/agent';
 import { Entry, Message } from './Message';
 import { version } from '../../package.json';
 import { CommandInput } from './CommandInput';

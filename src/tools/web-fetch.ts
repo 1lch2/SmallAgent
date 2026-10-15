@@ -213,7 +213,7 @@ export const webFetchTool = {
   definition: {
     name: 'web_fetch',
     description:
-      'Fetch a URL over HTTP(S) and return its main content as Markdown, with navigation, ads and sidebars removed. Pages that require client-side JavaScript rendering, and responses that are not HTML or text, are reported as unsupported. Very long content is written to a temporary file whose path is returned.',
+      'Fetch a URL over HTTP(S) and return its main content as Markdown, with navigation, ads and sidebars removed. No extra configuration is needed. Pages that require client-side JavaScript rendering, and responses that are not HTML or text, are reported as unsupported with the reason stated; asking for the same URL again will not change that outcome. Very long content is written to a temporary file whose path is returned; read that file with file_read only if you need the full text.',
     parameters: {
       type: 'object',
       properties: {
