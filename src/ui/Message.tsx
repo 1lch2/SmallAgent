@@ -84,7 +84,7 @@ export function Message({ entry, width }: MessageProps) {
           </Text>
         );
       }
-      return <Text color="gray">{truncate(entry.text)}</Text>;
+      return <Text color="gray">{truncate(sanitizeTerminalText(entry.text))}</Text>;
     }
     case 'error':
       return <Text color="red">{`⨂ ${entry.text}`}</Text>;
