@@ -33,11 +33,14 @@ Anthropic 格式和 OpenAI Responses 格式之后有空再搞吧，现在的又�
 
 ## 工具
 
-三个可用工具：
+四个可用工具：
 
 - **`file_read(path)`** — 读取文件（相对路径相对于当前工作目录解析）
 - **`file_write(path, content)`** — 写入/覆盖文件
 - **`terminal_run(command)`** — 从工作目录运行 shell 命令
+- **`web_fetch(url, timeout?)`** — 抓取网页并提取正文，返回 Markdown
+
+`web_fetch` 只处理服务端渲染的 HTML 与纯文本，依赖客户端 JavaScript 渲染的页面会失败并说明原因。正文过长时会写入 `~/.liberi/tmp/web/`，由模型按需再读回。
 
 典型 ReAct 循环：发送消息 → 如果模型返回工具调用，执行工具并将结果反馈回来 → 重复直到模型返回纯文本。
 
