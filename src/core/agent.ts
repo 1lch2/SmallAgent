@@ -31,7 +31,14 @@
  *    每次 `llm.complete()` 一次性拿到完整响应，比流式实现简单很多。
  *    当前阶段优先可读性，延迟不是瓶颈。
  */
-import type { AssistantMessage, LLM, Message, TokenUsage, ToolDefinition } from '../types';
+import type {
+  AssistantMessage,
+  LLM,
+  Message,
+  ModelInfo,
+  TokenUsage,
+  ToolDefinition,
+} from '../types';
 import { executeTool, tools } from '../tools';
 import { errorMessage } from '../utils/error';
 import { splitAssistantText } from '../utils/assistant-text';
@@ -90,6 +97,11 @@ export class BaseAgent {
   /** 切换模型连接并保留当前对话历史；应在当前回合结束后调用。 */
   setLLM(llm: LLM): void {
     this.llm = llm;
+  }
+
+  /** 返回当前模型的调用标识、展示名称与已知上下文限制。 */
+  get model(): ModelInfo {
+    return this.llm.model;
   }
 
   /** 由子类接入工具执行，基础 Agent 不提供具体工具。 */

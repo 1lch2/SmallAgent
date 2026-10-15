@@ -3,6 +3,18 @@ import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
 import { PROVIDERS } from './provider';
+import type { ModelInfo } from '../types';
+
+const LEGACY_PROVIDER_IDS: Record<string, string> = {
+  'minimax-api': 'minimax-cn',
+  'minimax-token-plan': 'minimax-cn-coding-plan',
+  'glm-api': 'zhipuai',
+  'glm-token-plan': 'zhipuai-coding-plan',
+  'mimo-api': 'xiaomi',
+  'mimo-token-plan': 'xiaomi-token-plan-cn',
+  'kimi-api': 'moonshotai-cn',
+  'kimi-coding-plan': 'kimi-code-plan-cn',
+};
 
 /** Agent 工具的工作区限制模式。 */
 export type PermissionMode = 'workspace-write' | 'full-access';
@@ -71,6 +83,14 @@ export async function loadSettings(file = SETTINGS_FILE): Promise<Settings> {
         !['workspace-write', 'full-access'].includes(data.permission))
     )
       throw new Error();
+    data.connections = data.connections.map(item => ({
+      ...item,
+      providerId: LEGACY_PROVIDER_IDS[item.providerId] ?? item.providerId,
+    }));
+    if (data.selectedProviderId !== undefined) {
+      data.selectedProviderId =
+        LEGACY_PROVIDER_IDS[data.selectedProviderId] ?? data.selectedProviderId;
+    }
     if (
       !data.connections.every(
         item =>
@@ -98,9 +118,9 @@ export interface StoragePaths {
   modelsFile: string;
 }
 
-/** 模型清单缓存，保留厂商返回顺序及数据来源。 */
+/** 模型清单缓存，保留厂商顺序、清单来源及模型名称和上下文限制。 */
 export interface ModelCatalog {
-  models: string[];
+  models: ModelInfo[];
   source: 'api' | 'documentation';
 }
 
@@ -172,7 +192,18 @@ function readCacheEntry(entry: unknown): ModelCacheEntry | undefined {
     typeof catalog !== 'object' ||
     catalog === null ||
     !Array.isArray(catalog.models) ||
-    !catalog.models.every(model => typeof model === 'string') ||
+    !catalog.models.every(
+      model =>
+        model !== null &&
+        typeof model === 'object' &&
+        typeof model.id === 'string' &&
+        typeof model.name === 'string' &&
+        [model.contextWindow, model.maxInputTokens, model.maxOutputTokens].every(
+          limit =>
+            limit === undefined ||
+            (typeof limit === 'number' && Number.isFinite(limit) && limit > 0)
+        )
+    ) ||
     !['api', 'documentation'].includes(catalog.source)
   ) {
     return undefined;

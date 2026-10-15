@@ -41,8 +41,19 @@ export interface CompletionRequest {
   onTokenUsage?: (usage: TokenUsage) => void;
 }
 
-/** 定义与具体 SDK 无关的模型补全能力。 */
+/** 模型调用标识、展示名称及已知的上下文和输入输出限制。 */
+export interface ModelInfo {
+  id: string;
+  name: string;
+  contextWindow?: number;
+  maxInputTokens?: number;
+  maxOutputTokens?: number;
+}
+
+/** 定义与具体 SDK 无关的模型信息和补全能力。 */
 export interface LLM {
+  /** 当前模型的名称与上下文限制，未收录的限制保持未知。 */
+  readonly model: ModelInfo;
   /** 根据对话消息和工具定义生成助手回复。 */
   complete(request: CompletionRequest): Promise<AssistantMessage>;
 }

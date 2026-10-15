@@ -10,15 +10,24 @@ function formatTokenCount(tokens: number): string {
   return tokens.toLocaleString('en-US');
 }
 
-/** 工具栏所需的模型、权限模式与累计用量，不依赖 App 或 Agent。 */
+/** 上下文长度按千进制 k/M 显示，截去小数；未收录时显示未知。 */
+function formatContextWindow(tokens: number | undefined): string {
+  if (tokens === undefined) return '未知';
+  if (tokens >= 1_000_000) return `${Math.floor(tokens / 1_000_000)}M`;
+  if (tokens >= 1_000) return `${Math.floor(tokens / 1_000)}k`;
+  return String(tokens);
+}
+
+/** 工具栏所需的模型、上下文长度、权限模式与累计用量，不依赖 App 或 Agent。 */
 export interface ToolbarProps {
   model?: string;
+  contextWindow?: number;
   permission: PermissionMode;
   usage: TokenUsage;
 }
 
-/** 展示模型、权限模式、累计 Token 用量、缓存命中量与输入缓存命中率。 */
-export function Toolbar({ model, permission, usage }: ToolbarProps) {
+/** 展示模型、权限模式、累计 Token 用量与上下文长度，以及缓存用量和命中率。 */
+export function Toolbar({ model, contextWindow, permission, usage }: ToolbarProps) {
   if (!model) return <Text color="gray">未连接任何模型 · 使用 /provider 连接服务商</Text>;
   const cacheHitRate = usage.promptTokens > 0 ? usage.cachedTokens / usage.promptTokens : 0;
 
@@ -30,7 +39,7 @@ export function Toolbar({ model, permission, usage }: ToolbarProps) {
         <Text color="#d8b4fe">{PERMISSION_LABELS[permission]}</Text>
       </Text>
       <Text color="gray">
-        {`${formatTokenCount(usage.totalTokens)} tokens · 缓存 ${formatTokenCount(usage.cachedTokens)} tokens · 命中率 ${(cacheHitRate * 100).toFixed(1)}%`}
+        {`${formatTokenCount(usage.totalTokens)} tokens / ${formatContextWindow(contextWindow)} · 缓存 ${formatTokenCount(usage.cachedTokens)} tokens · 命中率 ${(cacheHitRate * 100).toFixed(1)}%`}
       </Text>
     </Box>
   );

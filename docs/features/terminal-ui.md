@@ -8,7 +8,7 @@
 
 - [src/ui/App.tsx](../../src/ui/App.tsx)：`App` 管理输入、展示条目、忙碌状态、Token 用量和终端行列数；提交时调用 Agent，订阅并清理 stdout 的 `resize` 监听；向消息传递扣除左右 padding 后的可用列宽。
 - [src/ui/ProviderList.tsx](../../src/ui/ProviderList.tsx)：独立服务商选择和凭据输入界面，由 `/provider` 切换进入；状态和连接归属见[Provider](providers.md)。聊天组件保持挂载，切回时保留消息和历史。
-- [src/ui/Toolbar.tsx](../../src/ui/Toolbar.tsx)：`Toolbar` 接收模型名称、权限模式和累计 `TokenUsage`，展示模型名、权限模式、总用量与缓存命中率；不依赖 App 或 Agent，窄终端可换行。
+- [src/ui/Toolbar.tsx](../../src/ui/Toolbar.tsx)：`Toolbar` 接收当前 `OpenAILLM.model.name`、`contextWindow`、权限模式和累计 `TokenUsage`；右侧展示累计用量与上下文长度，以及缓存用量和命中率。`formatContextWindow` 使用千进制 k/M 整数显示上下文长度，未知时显示“未知”；不依赖 App 或 Agent，窄终端可换行。名称和上下文来自 models.dev 元信息，未匹配时名称使用 ID。
 - [src/ui/CommandInput.tsx](../../src/ui/CommandInput.tsx)：`CommandInput` 通过 `CommandInputProps.commands` 接收命令列表，菜单与执行共用该列表，不依赖 Provider 会话或内置命令。管理输入框下方的斜杠菜单、前缀筛选、循环上下键导航、Tab／回车补全，并在补全后将光标移至末尾。
 - [src/core/commands.ts](../../src/core/commands.ts)：`SlashCommand` 定义名称、说明和可选无参执行回调；`executeCommand` 接收列表和输入，按首词匹配并执行，返回是否消费输入。不注册具体功能，也不定义功能能力集合。
 - [src/hook/useCommands.ts](../../src/hook/useCommands.ts)：应用内置命令的组装入口，顶层接入 Ink 退出和会话页面能力，通过闭包注册 `/compact`、`/config`、`/model`、`/provider`、`/quit`；仅 `/compact` 继续只注册。`App` 调用该 Hook 并将列表传给 `CommandInput`，不参与命令匹配或分发。
@@ -33,3 +33,5 @@
 `assistant_text_response` → `Message` → `Markdown`：`Markdown` 把 marked 的 token 映射为 Ink 组件，支持标题、段落、强调、列表、引用、代码块、链接和表格等常见标记，不做语法高亮与数学、图表渲染。
 
 聊天界面始终显示标题与工作目录；布局保留消息区、输入框和独立 `Toolbar`，`Toolbar` 展示模型名、累计 Token 用量与缓存命中率。启动清屏入口见[启动与构建](cli-startup.md)。
+
+模型及 Provider 选择列表使用通用 `List` 的 `label/comment/value`：名称在左、灰色 ID 紧随其后，当前模型或 Provider 配置状态显示在右侧，其他项留空。用量仅随适配器切换而重置，补充当前模型元信息不重置累计统计。

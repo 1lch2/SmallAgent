@@ -18,9 +18,11 @@
 
 默认设置文件为用户主目录下的 `~/.liberi/settings.json`，也是用户目录中唯一保存 Agent 配置与凭据的文件；缺少 `permission` 时按 `workspace-write` 处理。启动只读取，不迁移写入；下一次保存设置、连接或模型时写入文件。该文件同时是[文件读取](file-tools.md)唯一排除的凭据文件。
 
+`loadSettings` 在读取时将旧内置 Provider ID 转换为对应的 models.dev ID，同时转换已选供应商标识；保留端点、模型 ID、凭据及其他设置，下次保存时使用新 ID。模型名称与上下文限制保存在模型清单缓存中，不写入凭据配置。
+
 模型清单缓存与网页正文临时文件统一放在 `~/.liberi/tmp` 下，运行时不在工作区以外新增其他写入位置。临时产物没有清理机制。
 
-Provider 保存连接、切换聊天模型或删除连接时保留 `subagentModel`；设置 subagent 模型时保留已有 Provider 配置。`subagentModel` 仅保存模型名称，当前使用已连接 Provider 的清单，不包含独立 subagent Provider 配置或运行能力。
+Provider 保存连接、切换聊天模型或删除连接时保留 `subagentModel`；设置 subagent 模型时保留已有 Provider 配置。`subagentModel` 仅保存模型 ID，当前使用已连接 Provider 的清单，不包含独立 subagent Provider 配置或运行能力。
 
 `permission` 的“工作区写入”保留文件真实路径与 Shell 命令路径检查；“完全许可”跳过这些限制，但仍受操作系统权限约束。模式保存保留 Provider 和 subagent 设置，切换不重置 Agent 历史或 Token 用量。读取旧值 `workspace` 时转换为 `workspace-write`，后续保存使用新 key。工具执行边界见[文件读写](file-tools.md)与[命令执行](terminal-tool.md)。
 

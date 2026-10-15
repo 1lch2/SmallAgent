@@ -101,13 +101,14 @@ export function ProviderList({ busy }: ProviderListProps) {
       <List
         items={PROVIDERS.map(item => ({
           id: item.id,
-          label: `${item.name}${
+          label: item.name,
+          comment: item.id,
+          value:
             session.connection?.options.providerId === item.id
-              ? '（已连接）'
+              ? '已连接'
               : session.settings.connections.some(option => option.providerId === item.id)
-                ? '（已配置）'
-                : ''
-          }`,
+                ? '已配置'
+                : '',
         }))}
         selectedIndex={selectedIndex}
         onChange={index => {

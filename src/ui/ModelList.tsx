@@ -3,6 +3,7 @@ import { Box, Text, useInput } from 'ink';
 import Spinner from 'ink-spinner';
 import { useProviderSession } from '../hook/useProviderSession';
 import { PROVIDERS } from '../core/provider';
+import type { ModelInfo } from '../types';
 import { List } from './List';
 
 /** 模型选择页面的忙碌状态与设置目标。 */
@@ -15,7 +16,7 @@ export interface ModelListProps {
 export function ModelList({ busy, target = 'agent' }: ModelListProps) {
   const session = useProviderSession();
   const { connection, loadModels, loadingConfig } = session;
-  const [models, setModels] = useState<string[]>([]);
+  const [models, setModels] = useState<ModelInfo[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -34,7 +35,12 @@ export function ModelList({ busy, target = 'agent' }: ModelListProps) {
       .then(catalog => {
         if (cancelled) return;
         setModels(catalog.models);
-        setSelectedIndex(Math.max(0, catalog.models.indexOf(currentModel ?? '')));
+        setSelectedIndex(
+          Math.max(
+            0,
+            catalog.models.findIndex(model => model.id === currentModel)
+          )
+        );
       })
       .catch((err: Error) => {
         if (!cancelled) setError(err.message);
@@ -76,8 +82,10 @@ export function ModelList({ busy, target = 'agent' }: ModelListProps) {
       <Text dimColor>↑↓ 选择 · Enter 确认 · Esc 返回</Text>
       <List
         items={models.map(model => ({
-          id: model,
-          label: `${model}${model === currentModel ? '（当前）' : ''}`,
+          id: model.id,
+          label: model.name,
+          comment: model.id,
+          value: model.id === currentModel ? '当前' : '',
         }))}
         selectedIndex={selectedIndex}
         onChange={setSelectedIndex}

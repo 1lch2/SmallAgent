@@ -45,7 +45,7 @@ export interface ProviderSessionProps {
   paths?: StoragePaths;
 }
 
-/** 管理连接和页面状态，启动时只读取本地选项并初始化模型。 */
+/** 管理连接和页面状态，启动时读取本地设置及模型信息缓存。 */
 export function ProviderSession({ children, paths = STORAGE_PATHS }: ProviderSessionProps) {
   const [connection, setConnection] = useState<ProviderConnection>();
   const [settings, setSettings] = useState<Settings>({
@@ -74,13 +74,19 @@ export function ProviderSession({ children, paths = STORAGE_PATHS }: ProviderSes
           item => item.providerId === saved.selectedProviderId
         );
         if (selected) {
+          const catalog = await loadModelCatalog(selected, paths);
+          if (cancelled) return;
           activate(
             {
               options: selected,
+              catalog,
               llm: new OpenAILLM({
                 apiKey: selected.apiKey,
                 baseURL: selected.baseURL,
-                model: selected.model,
+                model: catalog?.models.find(model => model.id === selected.model) ?? {
+                  id: selected.model,
+                  name: selected.model,
+                },
               }),
             },
             saved.permission
@@ -122,32 +128,46 @@ export function ProviderSession({ children, paths = STORAGE_PATHS }: ProviderSes
   const loadModels = useCallback(async (): Promise<ModelCatalog> => {
     if (!connection) throw new Error('未连接任何模型，请先使用 /provider 连接服务商。');
     if (connection.catalog) return connection.catalog;
-    const cached = await loadModelCatalog(connection.options, paths);
-    if (cached?.models.length) return cached;
-    const provider = PROVIDERS.find(item => item.id === connection.options.providerId)!;
-    const catalog = await fetchModelCatalog(
-      provider,
-      connection.options.apiKey,
-      connection.options.baseURL
-    );
-    try {
-      await saveModelCatalog(connection.options, catalog, paths);
-    } catch {
-      throw new Error('模型列表已获取，但本地模型缓存保存失败。');
+    let catalog = await loadModelCatalog(connection.options, paths);
+    if (!catalog?.models.length) {
+      const provider = PROVIDERS.find(item => item.id === connection.options.providerId)!;
+      catalog = await fetchModelCatalog(
+        provider,
+        connection.options.apiKey,
+        connection.options.baseURL
+      );
+      try {
+        await saveModelCatalog(connection.options, catalog, paths);
+      } catch {
+        throw new Error('模型列表已获取，但本地模型缓存保存失败。');
+      }
     }
+    const currentModel = catalog.models.find(model => model.id === connection.options.model);
+    if (currentModel) connection.llm.model = currentModel;
+    const loaded = catalog;
+    setConnection(current =>
+      current?.llm === connection.llm ? { ...current, catalog: loaded } : current
+    );
     return catalog;
   }, [connection, paths]);
 
   async function selectModel(model: string) {
     if (!connection) throw new Error('请先连接服务商。');
     if (model !== connection.options.model) {
+      const catalog = await loadModels();
+      const selected = catalog.models.find(item => item.id === model)!;
       const options = { ...connection.options, model };
       try {
         await saveProviderConnection(options, paths);
       } catch {
         throw new Error('模型选择保存失败，请检查本地配置文件。');
       }
-      activate({ ...connection, options, llm: new OpenAILLM(options) });
+      activate({
+        ...connection,
+        options,
+        catalog,
+        llm: new OpenAILLM({ ...options, model: selected }),
+      });
       setSettings(previous => ({
         ...previous,
         connections: previous.connections.map(item =>
@@ -174,8 +194,9 @@ export function ProviderSession({ children, paths = STORAGE_PATHS }: ProviderSes
         catalog = await fetchModelCatalog(provider, options.apiKey, options.baseURL);
         await saveModelCatalog(options, catalog, paths);
       }
-      const selected = { ...options, model: catalog.models[0]! };
-      next = { options: selected, catalog, llm: new OpenAILLM(selected) };
+      const model = catalog.models[0]!;
+      const selected = { ...options, model: model.id };
+      next = { options: selected, catalog, llm: new OpenAILLM({ ...selected, model }) };
     }
     const updated: Settings = {
       ...saved,

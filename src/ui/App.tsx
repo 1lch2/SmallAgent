@@ -33,7 +33,7 @@ export function App() {
 
   useEffect(() => {
     setTokenUsage({ totalTokens: 0, promptTokens: 0, cachedTokens: 0 });
-  }, [connection]);
+  }, [connection?.llm]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -135,7 +135,8 @@ export function App() {
         {session.loadingConfig && <Text dimColor>正在读取本地配置...</Text>}
         {session.error && <Text color="yellow">{session.error} 使用 /provider 重新连接。</Text>}
         <Toolbar
-          model={connection?.options.model}
+          model={connection?.llm.model.name}
+          contextWindow={connection?.llm.model.contextWindow}
           permission={session.settings.permission}
           usage={tokenUsage}
         />

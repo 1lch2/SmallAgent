@@ -19,6 +19,8 @@
 
 工具参数的 JSON 解析失败时使用空对象。模型请求失败时推送 `error` 事件并结束本轮；工具失败文本仍进入历史并反馈模型。完整历史由 Agent 实例维护，UI 维护展示条目，两者职责不同。
 
+`BaseAgent.model` 从当前 `LLM.model` 读取名称及上下文限制，不重复维护模型状态；`setLLM` 保留历史并切换这份元信息。数据来源见[模型适配](model-adapter.md)与[Provider](providers.md)。
+
 MainAgent 初始化时接收权限模式，默认 `workspace-write`；每次工具执行向分派器传递当前模式。回合结束后可更新 `MainAgent.permission`，不修改系统提示词或历史；基本提示词不包含权限模式，工具行为说明由各自描述提供。配置入口见[设置配置](settings.md)。
 
 MainAgent 在初始化时按“基本提示词 → 工具描述 → skill 元数据 → AGENTS.md”组合系统提示词；只在初始化时读取文件，不随文件修改刷新。工具提示词仅包含传入的工具名称与描述，不预设文件、Shell 或网页能力；Shell 用法及网页读取说明随对应工具描述提供。

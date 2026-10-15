@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
 import { OpenAILLM } from '../openai-llm';
+import type { ModelInfo } from '../types';
 import type { ModelCatalog, SavedConnection } from './settings';
 
 /** 内置服务商的端点与模型列表备用来源。 */
@@ -13,29 +14,33 @@ export interface ProviderDefinition {
 /** 按官方文档注册的 OpenAI Chat Completions 兼容服务商。 */
 export const PROVIDERS: readonly ProviderDefinition[] = [
   { id: 'deepseek', name: 'DeepSeek', baseURL: 'https://api.deepseek.com' },
-  { id: 'minimax-api', name: 'MiniMax（API）', baseURL: 'https://api.minimax.cn/v1' },
-  { id: 'minimax-token-plan', name: 'MiniMax（Token Plan）', baseURL: 'https://api.minimax.cn/v1' },
+  { id: 'minimax-cn', name: 'MiniMax（API）', baseURL: 'https://api.minimax.cn/v1' },
   {
-    id: 'glm-api',
+    id: 'minimax-cn-coding-plan',
+    name: 'MiniMax（Token Plan）',
+    baseURL: 'https://api.minimax.cn/v1',
+  },
+  {
+    id: 'zhipuai',
     name: '智谱GLM（API）',
     baseURL: 'https://open.bigmodel.cn/api/paas/v4',
     modelsDocument: 'https://docs.bigmodel.cn/cn/guide/start/model-overview.md',
   },
   {
-    id: 'glm-token-plan',
+    id: 'zhipuai-coding-plan',
     name: '智谱GLM（Coding Plan）',
     baseURL: 'https://open.bigmodel.cn/api/coding/paas/v4',
     modelsDocument: 'https://docs.bigmodel.cn/cn/coding-plan/latest-model.md',
   },
-  { id: 'mimo-api', name: '小米 MiMo（API）', baseURL: 'https://api.xiaomimimo.com/v1' },
+  { id: 'xiaomi', name: '小米 MiMo（API）', baseURL: 'https://api.xiaomimimo.com/v1' },
   {
-    id: 'mimo-token-plan',
+    id: 'xiaomi-token-plan-cn',
     name: '小米 MiMo（Token Plan）',
     baseURL: 'https://token-plan-cn.xiaomimimo.com/v1',
   },
-  { id: 'kimi-api', name: 'Kimi（API）', baseURL: 'https://api.moonshot.cn/v1' },
+  { id: 'moonshotai-cn', name: 'Kimi（API）', baseURL: 'https://api.moonshot.cn/v1' },
   {
-    id: 'kimi-coding-plan',
+    id: 'kimi-code-plan-cn',
     name: 'Kimi（Coding Plan）',
     baseURL: 'https://api.kimi.com/coding/v1',
   },
@@ -73,7 +78,7 @@ async function modelsFromDocument(provider: ProviderDefinition): Promise<string[
   if (!response.ok) throw new Error(`官方模型文档读取失败（HTTP ${response.status}）。`);
   const text = await response.text();
   const names =
-    provider.id === 'glm-api'
+    provider.id === 'zhipuai'
       ? [
           ...text.matchAll(
             /^\s*\|\s*\[(GLM-[^\]]+)\]\(\/cn\/guide\/models\/(?:text|vlm|free)\/[^)]+\)/gm
@@ -93,7 +98,47 @@ function connectionError(error: unknown, stage: string): Error {
   return new Error(`${stage}失败，请检查网络及服务端状态。`);
 }
 
-/** 查询服务商模型清单，保留接口或官方文档的来源信息。 */
+interface ModelsDevModel {
+  name: string;
+  limit?: { context?: number; input?: number; output?: number };
+}
+
+function tokenLimit(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : undefined;
+}
+
+async function fetchModelInfo(provider: ProviderDefinition, ids: string[]): Promise<ModelInfo[]> {
+  let metadata: Record<string, ModelsDevModel> = {};
+  if (provider.id !== 'openai-compatible') {
+    let response: Response;
+    try {
+      response = await fetch('https://models.dev/api.json', {
+        signal: AbortSignal.timeout(20_000),
+      });
+    } catch {
+      throw new Error('models.dev 模型信息同步失败，请检查网络后重试。');
+    }
+    if (!response.ok) throw new Error(`models.dev 模型信息同步失败（HTTP ${response.status}）。`);
+    const data = (await response.json()) as Record<
+      string,
+      { models: Record<string, ModelsDevModel> }
+    >;
+    if (!data[provider.id]?.models) throw new Error(`models.dev 未收录 Provider：${provider.id}。`);
+    metadata = data[provider.id]!.models;
+  }
+  return ids.map(id => {
+    const model = metadata[id];
+    return {
+      id,
+      name: typeof model?.name === 'string' && model.name ? model.name : id,
+      contextWindow: tokenLimit(model?.limit?.context),
+      maxInputTokens: tokenLimit(model?.limit?.input),
+      maxOutputTokens: tokenLimit(model?.limit?.output),
+    };
+  });
+}
+
+/** 查询服务商可用模型，补充 models.dev 名称与上下文限制并保留清单来源。 */
 export async function fetchModelCatalog(
   provider: ProviderDefinition,
   apiKey: string,
@@ -128,7 +173,7 @@ export async function fetchModelCatalog(
     }
   }
   if (!models.length) throw new Error('服务商未返回可用模型。');
-  return { models, source };
+  return { models: await fetchModelInfo(provider, models), source };
 }
 
 /** 查询模型列表并验证首个模型，返回连接供会话层保存和激活。 */
@@ -144,7 +189,7 @@ export async function connectProvider(
   const client = new OpenAI({ apiKey: key, baseURL: endpoint, timeout: 20_000, maxRetries: 0 });
   try {
     const response = await client.chat.completions.create({
-      model,
+      model: model.id,
       messages: [{ role: 'user', content: 'Reply OK.' }],
       max_tokens: 16,
       stream: false,
@@ -156,7 +201,7 @@ export async function connectProvider(
   const options: SavedConnection = {
     providerId: provider.id,
     baseURL: endpoint,
-    model,
+    model: model.id,
     apiKey: key,
   };
   return { options, catalog, llm: new OpenAILLM({ apiKey: key, baseURL: endpoint, model }) };
