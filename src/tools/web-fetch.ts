@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { TMP_DIRECTORY } from '../core/settings';
 import type { ToolDefinition } from '../types';
 import { errorMessage } from '../utils/error';
-import { truncateBytes } from '../utils/format';
+import { truncateBytes } from '../utils/format-text';
 import { isPrivateAddress, isPrivateHostname } from '../utils/private-network';
 import { errorBodyPreview, readWebPage, WebFetchError } from '../utils/web-reader';
 

@@ -2,7 +2,7 @@ import { Fragment, memo, useMemo, type ReactNode } from 'react';
 import { Box, Text } from 'ink';
 import { Marked, type MarkedToken, type Token, type Tokens } from 'marked';
 import stringWidth from 'string-width';
-import { sanitizeTerminalText } from '../utils/terminal-text';
+import { sanitizeTerminalText } from '../utils/format-text';
 
 /** 描述 Markdown 原文和扣除外层留白后的可用列宽。 */
 export interface MarkdownProps {

@@ -2,7 +2,7 @@ import { Readability } from '@mozilla/readability';
 import { parseHTML } from 'linkedom';
 import { NodeHtmlMarkdown } from 'node-html-markdown';
 import { errorMessage } from './error';
-import { truncateBytes } from './format';
+import { truncateBytes } from './format-text';
 
 /** 响应体大小上限；超出后只保留已读取的部分并标记截断。 */
 export const MAX_RESPONSE_BYTES = 2 * 1024 * 1024;

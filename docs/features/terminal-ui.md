@@ -16,8 +16,7 @@
 - [src/ui/Message.tsx](../../src/ui/Message.tsx)：`Entry` 定义展示类型，`Message` 渲染用户、思考、回复、工具摘要和错误。
 - [src/ui/Markdown.tsx](../../src/ui/Markdown.tsx)：`Markdown` 将 marked 内置 token 映射为 Ink 的 Box/Text，只接入 assistant 正式回复，并按可用列宽处理表格换行。
 - [src/utils/assistant-text.ts](../../src/utils/assistant-text.ts)：`splitAssistantText` 按完整 `<think>...</think>` 标签拆分正文与思考块，由 Agent 调用后推送 UI 事件。
-- [src/utils/format.ts](../../src/utils/format.ts)：`truncate` 截断长工具输出，`formatArgs` 格式化通用工具参数，`truncateBytes` 按 UTF-8 字节截断供[网页抓取](web-fetch.md)使用。
-- [src/utils/terminal-text.ts](../../src/utils/terminal-text.ts)：`sanitizeTerminalText` 清除文本自带的 ANSI 控制序列，把残留控制字符显示为转义文本。
+- [src/utils/format-text.ts](../../src/utils/format-text.ts)：消息与文本格式化工具。`truncate` 截断长工具输出，`formatArgs` 格式化通用工具参数，`truncateBytes` 按 UTF-8 字节截断供[网页抓取](web-fetch.md)使用，`sanitizeTerminalText` 清除文本自带的 ANSI 控制序列并把残留控制字符显示为转义文本。
 
 ## 调用链与状态边界
 

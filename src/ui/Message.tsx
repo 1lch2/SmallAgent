@@ -1,7 +1,6 @@
 import { Box, Text } from 'ink';
-import { formatArgs, truncate } from '../utils/format';
+import { formatArgs, sanitizeTerminalText, truncate } from '../utils/format-text';
 import { Markdown } from './Markdown';
-import { sanitizeTerminalText } from '../utils/terminal-text';
 
 function getFileName(args: unknown): string {
   if (

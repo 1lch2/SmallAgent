@@ -9,7 +9,7 @@
 - [src/tools/web-fetch.ts](../../src/tools/web-fetch.ts)：注册 `web_fetch`；`webFetch` 解析参数、校验目标地址、调用抓取提取并组装返回文本。工作区模式下无需额外权限。
 - [src/utils/web-reader.ts](../../src/utils/web-reader.ts)：`readWebPage` 负责请求、跟随重定向、解码与正文提取；`errorBodyPreview` 提供非成功响应的响应体预览。
 - [src/utils/private-network.ts](../../src/utils/private-network.ts)：`isPrivateAddress` 与 `isPrivateHostname` 判定环回、私网、链路本地和本机命名空间，供工具层做访问前置校验。
-- [src/utils/format.ts](../../src/utils/format.ts)：`truncateBytes` 按 UTF-8 字节截断文本。
+- [src/utils/format-text.ts](../../src/utils/format-text.ts)：`truncateBytes` 按 UTF-8 字节截断文本。
 - [src/ui/Message.tsx](../../src/ui/Message.tsx)：`web_fetch` 的调用与结果都展示为单行青色摘要 `→ Fetch: {host}`。
 - [src/ui/App.tsx](../../src/ui/App.tsx)：`web_fetch` 的结果事件不进入消息列表。
 
