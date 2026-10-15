@@ -16,7 +16,7 @@
 - [src/ui/Message.tsx](../../src/ui/Message.tsx)：`Entry` 定义展示类型，`Message` 渲染用户、思考、回复、工具摘要和错误。
 - [src/ui/Markdown.tsx](../../src/ui/Markdown.tsx)：`Markdown` 将 marked 内置 token 映射为 Ink 的 Box/Text，只接入 assistant 正式回复；使用 string-width 测量表格可见文本宽度，超宽时压缩列宽并在单元格内换行，保留行列分隔线。更窄时移除列间留白；窗口连最小列宽与分隔线都容纳不下时保持表格最小宽度。
 - [src/utils/assistant-text.ts](../../src/utils/assistant-text.ts)：`splitAssistantText` 按完整 `<think>...</think>` 标签拆分正文与思考块，清除边界空行并忽略空白块；由 Agent 调用后推送 UI 事件。
-- [src/utils/format.ts](../../src/utils/format.ts)：`truncate` 截断长工具输出，`formatArgs` 格式化通用工具参数。
+- [src/utils/format.ts](../../src/utils/format.ts)：`truncate` 截断长工具输出后由展示分支清理控制字符，`formatArgs` 格式化通用工具参数，`truncateBytes` 按 UTF-8 字节截断供[网页抓取](web-fetch.md)使用。
 - [src/utils/terminal-text.ts](../../src/utils/terminal-text.ts)：`sanitizeTerminalText` 清除文本自带的 ANSI 控制序列，将残留控制字符显示为转义文本，保留换行和制表符。正式回复在 Markdown 解析前及解析后的 token 显示字段上处理，覆盖字符实体生成的控制字符；thinking 与工具结果仅在展示时处理，不改变原始消息和历史。工具结果先清理再截断，避免截断丢失样式重置码后影响后续终端文本。
 
 ## 调用链与状态边界
@@ -31,7 +31,7 @@
 
 `TextInput.onSubmit` → `handleSubmit` → [Agent.send](agent-loop.md) → `handleUpdate` → 展示条目或用量状态 → `Message`。空白输入和忙碌时的提交被忽略，执行结束时在 `finally` 中恢复忙碌状态。
 
-文件工具调用只展示文件名，`App` 不追加其结果事件，包含错误文本的文件工具结果也走这一过滤分支。命令调用展示命令文本，命令结果先清理终端控制字符再截断显示。模型用量的计算归属见[模型适配](model-adapter.md)。
+文件工具调用只展示文件名，`App` 不追加其结果事件，包含错误文本的文件工具结果也走这一过滤分支。网页抓取工具同样只展示单行摘要：`Message` 用青色渲染 `→ Fetch: {主机名}`，`App` 也不追加其结果事件，避免返回的长正文在终端重复渲染；颜色规则详见[网页抓取](web-fetch.md)。命令调用展示命令文本，命令结果先清理终端控制字符再截断显示。模型用量的计算归属见[模型适配](model-adapter.md)。
 
 `assistant_text_response` → `Message` → `Markdown`。支持标题、段落、粗体、斜体、删除线、下划线样式的行内代码、列表与任务列表、引用、代码块、分隔线、链接和表格。链接保留文字与地址；图片保留替代文字与地址；HTML 以源码展示，数学公式及 Mermaid 无专用渲染。代码块显示语言标签并保留空行和缩进，Tab 展开为四个空格，不做语法颜色高亮。表格按包含链接地址的可见文本测量自然列宽；放不下时优先保留短列并压缩长列，单元格内自动换行，行间横线和贯穿行高的列分隔线保留表格结构。
 

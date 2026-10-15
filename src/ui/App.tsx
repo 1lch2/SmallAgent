@@ -51,7 +51,9 @@ export function App() {
       setTokenUsage(u.usage);
       return;
     }
-    if (u.kind === 'tool_result' && (u.name === 'file_read' || u.name === 'file_write')) return;
+    // 文件与网页工具的结果正文很长，终端只展示调用摘要，不重复渲染结果。
+    if (u.kind === 'tool_result' && ['file_read', 'file_write', 'web_fetch'].includes(u.name))
+      return;
 
     setEntries(prev => {
       switch (u.kind) {

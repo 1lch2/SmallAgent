@@ -3,6 +3,7 @@ import type { ToolDefinition } from '../types';
 import { fileReadTool } from './file-read';
 import { fileWriteTool } from './file-write';
 import { terminalRunTool } from './terminal-run';
+import { webFetchTool } from './web-fetch';
 import type { PermissionMode } from '../core/settings';
 
 type ToolHandler = {
@@ -15,7 +16,7 @@ type ToolHandler = {
   ) => Promise<string>;
 };
 
-const registeredTools: ToolHandler[] = [fileReadTool, fileWriteTool, terminalRunTool];
+const registeredTools: ToolHandler[] = [fileReadTool, fileWriteTool, terminalRunTool, webFetchTool];
 const toolRegistry = new Map<string, ToolHandler>(
   registeredTools.map((tool): [string, ToolHandler] => [tool.definition.name, tool])
 );

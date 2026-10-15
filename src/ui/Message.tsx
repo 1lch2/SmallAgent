@@ -15,6 +15,22 @@ function getFileName(args: unknown): string {
   return args.path.split(/[\\/]/).filter(Boolean).pop() || 'unknown';
 }
 
+function getHost(args: unknown): string {
+  if (
+    typeof args !== 'object' ||
+    args === null ||
+    !('url' in args) ||
+    typeof args.url !== 'string'
+  ) {
+    return 'unknown';
+  }
+  try {
+    return new URL(args.url).hostname || 'unknown';
+  } catch {
+    return args.url;
+  }
+}
+
 /** 描述终端消息列表支持展示的条目类型。 */
 export type Entry =
   | { type: 'user'; text: string }
@@ -73,6 +89,11 @@ export function Message({ entry, width }: MessageProps) {
             : '';
         return <Text color="blue" backgroundColor="black">{`$ ${command}`}</Text>;
       }
+      if (entry.name === 'web_fetch') {
+        return (
+          <Text color="cyan" backgroundColor="black">{`→ Fetch: ${getHost(entry.args)} `}</Text>
+        );
+      }
       return <Text color="yellow">{`→ ${entry.name}(${formatArgs(entry.args)})`}</Text>;
     }
     case 'tool_result': {
@@ -82,6 +103,11 @@ export function Message({ entry, width }: MessageProps) {
           <Text color="green" backgroundColor="black">
             {`→ ${operation}: ${getFileName(entry.args)} `}
           </Text>
+        );
+      }
+      if (entry.name === 'web_fetch') {
+        return (
+          <Text color="cyan" backgroundColor="black">{`→ Fetch: ${getHost(entry.args)} `}</Text>
         );
       }
       return <Text color="gray">{truncate(sanitizeTerminalText(entry.text))}</Text>;

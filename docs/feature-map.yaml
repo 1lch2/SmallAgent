@@ -1,10 +1,11 @@
 path_base: repository-root
 scope: >-
   覆盖当前 CLI 的启动与本地构建、Agent 对话与工具循环、模型接口适配、
-  Provider 连接、Agent 设置、终端交互、文件读写、命令执行及 GitHub Release 发布主链路。内容基于源码核对，用于定位实现，
+  Provider 连接、Agent 设置、终端交互、文件读写、命令执行、网页抓取及 GitHub Release 发布主链路。内容基于源码核对，用于定位实现，
   不代表真实模型端点、终端或跨平台行为已经运行验收。
 not_yet_mapped:
   - VSCode 调试配置
+  - 网页搜索与远程网页读取（Playwright、Tavily、Jina 等，以及 MCP 客户端）
 features:
   - id: release
     name: GitHub Actions 发布、安装包与 Release Notes
@@ -196,3 +197,27 @@ features:
         src/utils/command-permission/terminal-permission.ts,
         src/utils/shell.ts,
       ]
+  - id: web-fetch
+    name: 网页抓取、Readability 正文提取与内网地址防护
+    keywords:
+      [
+        web_fetch,
+        webFetch,
+        URL,
+        HTTP,
+        fetch,
+        网页,
+        抓取,
+        正文提取,
+        Markdown,
+        Readability,
+        linkedom,
+        node-html-markdown,
+        charset,
+        临时文件,
+        SSRF,
+        内网地址,
+        重定向,
+      ]
+    doc: docs/features/web-fetch.md
+    entrypoints: [src/tools/web-fetch.ts, src/utils/web-reader.ts, src/utils/private-network.ts]

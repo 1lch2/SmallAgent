@@ -1,5 +1,5 @@
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
-import { homedir, tmpdir } from 'node:os';
+import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
 import { providers } from './provider';
@@ -105,10 +105,13 @@ export interface ModelCatalog {
   updatedAt: string;
 }
 
-/** 默认配置位于用户目录，模型缓存位于系统临时目录。 */
+/** 用户目录中放置临时产物的统一位置。 */
+export const tmpDirectory = join(homedir(), '.liberi', 'tmp');
+
+/** 默认配置位于用户目录，模型缓存与网页临时文件位于用户目录下的临时目录。 */
 export const storagePaths: StoragePaths = {
   configFile: settingsFile,
-  cacheDirectory: join(tmpdir(), 'liberi-code', 'models'),
+  cacheDirectory: join(tmpDirectory, 'models'),
 };
 
 /** 保存连接选项并选中该服务商，不覆盖其他服务商的选项。 */
