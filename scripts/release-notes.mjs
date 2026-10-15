@@ -48,12 +48,13 @@ for (const line of log.trim().split('\n')) {
 
 const sections = ['## 更新内容'];
 for (const [type, title] of [
-  ['feat', '新功能（feat）'],
-  ['fix', '问题修复（fix）'],
+  ['feat', '新增功能'],
+  ['fix', '问题修复'],
 ]) {
   if (groups[type].length) sections.push(`### ${title}\n\n${groups[type].join('\n')}`);
 }
-if (!groups.feat.length && !groups.fix.length) sections.push('本次发布没有 feat 或 fix 提交。');
+if (!groups.feat.length && !groups.fix.length)
+  sections.push('本次发布没有新增功能或问题修复提交。');
 sections.push(
   previousTag
     ? `[完整变更](${repositoryURL}/compare/${encodeURIComponent(previousTag)}...${encodeURIComponent(tag)})`
